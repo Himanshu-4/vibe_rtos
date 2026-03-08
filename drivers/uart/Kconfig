@@ -1,0 +1,14 @@
+config UART
+    bool "UART driver"
+    default y
+    help
+      Enable UART (Universal Asynchronous Receiver/Transmitter) driver.
+      Required for the logging backend and debug shell.
+
+config UART_INTERRUPT_DRIVEN
+    bool "Interrupt-driven UART"
+    default y
+    depends on UART
+    help
+      Use interrupt-driven UART RX/TX instead of polling.
+      Improves throughput at the cost of IRQ overhead.

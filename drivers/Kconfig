@@ -1,0 +1,15 @@
+# drivers/Kconfig — Driver subsystem
+
+menu "Device Drivers"
+
+source "drivers/gpio/Kconfig"
+source "drivers/uart/Kconfig"
+source "drivers/spi/Kconfig"
+source "drivers/i2c/Kconfig"
+source "drivers/timer/Kconfig"
+source "drivers/adc/Kconfig"
+source "drivers/flash/Kconfig"
+source "drivers/rtc/Kconfig"
+source "drivers/watchdog/Kconfig"
+
+endmenu

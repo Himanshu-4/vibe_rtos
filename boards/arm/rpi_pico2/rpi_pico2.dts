@@ -1,0 +1,124 @@
+/*
+ * rpi_pico2.dts — Device Tree Source for Raspberry Pi Pico 2 (RP2350)
+ *
+ * Two Cortex-M33 cores + two RISC-V Hazard3 cores (only M33 described here).
+ * 520KB on-chip SRAM, 2MB external QSPI flash.
+ */
+
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+    model = "Raspberry Pi Pico 2";
+    compatible = "raspberrypi,rp2350";
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        cpu0: cpu@0 {
+            compatible = "arm,cortex-m33";
+            device_type = "cpu";
+            reg = <0>;
+            clock-frequency = <150000000>;  /* 150 MHz max */
+        };
+
+        cpu1: cpu@1 {
+            compatible = "arm,cortex-m33";
+            device_type = "cpu";
+            reg = <1>;
+            clock-frequency = <150000000>;
+        };
+    };
+
+    /* 520KB on-chip SRAM */
+    sram0: memory@20000000 {
+        compatible = "mmio-sram";
+        reg = <0x20000000 0x82000>;  /* 520KB */
+    };
+
+    flash0: flash@10000000 {
+        compatible = "soc-nv-flash";
+        reg = <0x10000000 0x200000>;  /* 2MB QSPI */
+        erase-block-size = <4096>;
+        write-block-size = <256>;
+    };
+
+    soc {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        uart0: uart@40070000 {
+            compatible = "arm,pl011";
+            reg = <0x40070000 0x1000>;
+            interrupts = <20 3>;
+            clock-frequency = <150000000>;
+            current-speed = <115200>;
+            status = "okay";
+        };
+
+        uart1: uart@40078000 {
+            compatible = "arm,pl011";
+            reg = <0x40078000 0x1000>;
+            interrupts = <21 3>;
+            clock-frequency = <150000000>;
+            current-speed = <115200>;
+            status = "disabled";
+        };
+
+        spi0: spi@40080000 {
+            compatible = "arm,pl022";
+            reg = <0x40080000 0x1000>;
+            interrupts = <18 3>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        i2c0: i2c@40090000 {
+            compatible = "snps,designware-i2c";
+            reg = <0x40090000 0x1000>;
+            interrupts = <23 3>;
+            clock-frequency = <400000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        adc: adc@400a0000 {
+            compatible = "raspberrypi,rp2350-adc";
+            reg = <0x400A0000 0x1000>;
+            interrupts = <22 3>;
+            #io-channel-cells = <1>;
+            status = "disabled";
+        };
+
+        gpio: gpio@40028000 {
+            compatible = "raspberrypi,rp2350-gpio";
+            reg = <0x40028000 0x1000>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            interrupt-controller;
+            #interrupt-cells = <2>;
+            interrupts = <13 3>, <14 3>;
+            ngpios = <30>;
+            status = "okay";
+        };
+
+        watchdog: watchdog@400d0000 {
+            compatible = "raspberrypi,rp2350-watchdog";
+            reg = <0x400D0000 0x1000>;
+            status = "disabled";
+        };
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led0: led_0 {
+            label = "LED";
+            gpios = <&gpio 25 0>;
+        };
+    };
+};

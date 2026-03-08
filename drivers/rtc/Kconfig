@@ -1,0 +1,6 @@
+config RTC
+    bool "RTC driver"
+    default n
+    help
+      Enable Real-Time Clock driver.
+      RP2040: has a built-in RTC peripheral (base 0x4005C000).

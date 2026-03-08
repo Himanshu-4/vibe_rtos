@@ -1,0 +1,26 @@
+manifest:
+  version: "0.13"
+
+  self:
+    path: vibe_rtos
+    west-commands: scripts/west_commands.py
+
+  defaults:
+    remote: origin
+
+  remotes:
+    - name: origin
+      url-base: https://github.com/himanshujangra/vibe_rtos
+
+  projects:
+    - name: vibe_rtos
+      remote: origin
+      revision: main
+      path: .
+
+  # Future dependencies can be added here, e.g.:
+  # - name: cmsis
+  #   remote: origin
+  #   url: https://github.com/ARM-software/CMSIS_5
+  #   revision: 5.9.0
+  #   path: ext/cmsis

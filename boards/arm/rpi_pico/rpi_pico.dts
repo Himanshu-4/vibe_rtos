@@ -1,0 +1,181 @@
+/*
+ * rpi_pico.dts — Device Tree Source for Raspberry Pi Pico (RP2040)
+ *
+ * Describes the hardware resources available on the Pico board.
+ * Compile with dtc: dtc -I dts -O dtb -o rpi_pico.dtb rpi_pico.dts
+ */
+
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+    model = "Raspberry Pi Pico";
+    compatible = "raspberrypi,rp2040";
+
+    /* ---------------------------------------------------------------
+     * CPU cluster — dual Cortex-M0+
+     * ------------------------------------------------------------- */
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        cpu0: cpu@0 {
+            compatible = "arm,cortex-m0plus";
+            device_type = "cpu";
+            reg = <0>;
+            clock-frequency = <133000000>;  /* 133 MHz max */
+        };
+
+        cpu1: cpu@1 {
+            compatible = "arm,cortex-m0plus";
+            device_type = "cpu";
+            reg = <1>;
+            clock-frequency = <133000000>;
+        };
+    };
+
+    /* ---------------------------------------------------------------
+     * Memory
+     * ------------------------------------------------------------- */
+    sram0: memory@20000000 {
+        compatible = "mmio-sram";
+        reg = <0x20000000 0x40000>;  /* 256KB striped SRAM */
+    };
+
+    sram4: memory@20040000 {
+        compatible = "mmio-sram";
+        reg = <0x20040000 0x1000>;   /* 4KB SRAM bank 4 */
+    };
+
+    sram5: memory@20041000 {
+        compatible = "mmio-sram";
+        reg = <0x20041000 0x1000>;   /* 4KB SRAM bank 5 */
+    };
+
+    flash0: flash@10000000 {
+        compatible = "soc-nv-flash";
+        reg = <0x10000000 0x200000>;  /* 2MB external QSPI flash */
+        erase-block-size = <4096>;
+        write-block-size = <256>;
+    };
+
+    /* ---------------------------------------------------------------
+     * APB peripheral bus
+     * ------------------------------------------------------------- */
+    soc {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        uart0: uart@40034000 {
+            compatible = "arm,pl011";
+            reg = <0x40034000 0x1000>;
+            interrupts = <20 3>;          /* IRQ 20, priority 3 */
+            clock-names = "uartclk";
+            clock-frequency = <125000000>;
+            current-speed = <115200>;
+            status = "okay";
+        };
+
+        uart1: uart@40038000 {
+            compatible = "arm,pl011";
+            reg = <0x40038000 0x1000>;
+            interrupts = <21 3>;
+            clock-frequency = <125000000>;
+            current-speed = <115200>;
+            status = "disabled";
+        };
+
+        spi0: spi@4003c000 {
+            compatible = "arm,pl022";
+            reg = <0x4003C000 0x1000>;
+            interrupts = <18 3>;
+            clock-frequency = <125000000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        spi1: spi@40040000 {
+            compatible = "arm,pl022";
+            reg = <0x40040000 0x1000>;
+            interrupts = <19 3>;
+            clock-frequency = <125000000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        i2c0: i2c@40044000 {
+            compatible = "snps,designware-i2c";
+            reg = <0x40044000 0x1000>;
+            interrupts = <23 3>;
+            clock-frequency = <400000>;   /* 400kHz fast-mode */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        i2c1: i2c@40048000 {
+            compatible = "snps,designware-i2c";
+            reg = <0x40048000 0x1000>;
+            interrupts = <24 3>;
+            clock-frequency = <400000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "disabled";
+        };
+
+        adc: adc@4004c000 {
+            compatible = "raspberrypi,rp2040-adc";
+            reg = <0x4004C000 0x1000>;
+            interrupts = <22 3>;
+            #io-channel-cells = <1>;
+            status = "disabled";
+        };
+
+        pwm: pwm@40050000 {
+            compatible = "raspberrypi,rp2040-pwm";
+            reg = <0x40050000 0x1000>;
+            #pwm-cells = <3>;
+            status = "disabled";
+        };
+
+        gpio: gpio@40014000 {
+            compatible = "raspberrypi,rp2040-gpio";
+            reg = <0x40014000 0x1000>;  /* IO_BANK0 */
+            gpio-controller;
+            #gpio-cells = <2>;
+            interrupt-controller;
+            #interrupt-cells = <2>;
+            interrupts = <13 3>, <14 3>;  /* IO_IRQ_BANK0 */
+            ngpios = <30>;
+            status = "okay";
+        };
+
+        watchdog: watchdog@40058000 {
+            compatible = "raspberrypi,rp2040-watchdog";
+            reg = <0x40058000 0x1000>;
+            status = "disabled";
+        };
+
+        rtc: rtc@4005c000 {
+            compatible = "raspberrypi,rp2040-rtc";
+            reg = <0x4005C000 0x1000>;
+            interrupts = <25 3>;
+            status = "disabled";
+        };
+    };
+
+    /* ---------------------------------------------------------------
+     * On-board LED (GPIO 25 on standard Pico)
+     * ------------------------------------------------------------- */
+    leds {
+        compatible = "gpio-leds";
+        led0: led_0 {
+            label = "LED";
+            gpios = <&gpio 25 0>;  /* GPIO 25, active high */
+        };
+    };
+};

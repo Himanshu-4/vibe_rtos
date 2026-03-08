@@ -1,0 +1,20 @@
+# vibe_config.yml — VibeRTOS application configuration for hello_world sample
+# This file is parsed by cmake/modules/yaml_config.cmake at build time.
+
+board: rpi_pico
+
+kernel:
+  tick_hz: 1000
+  heap_size: 8192
+  smp: false
+
+subsys:
+  shell: true
+  logging:
+    enabled: true
+    level: inf
+    backend: uart
+
+drivers:
+  uart: true
+  gpio: true

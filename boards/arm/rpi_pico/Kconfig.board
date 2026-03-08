@@ -1,0 +1,6 @@
+config BOARD_RPI_PICO
+    bool "Raspberry Pi Pico"
+    select SOC_RP2040
+    help
+      Raspberry Pi Pico board based on the RP2040 microcontroller.
+      Features: 2MB QSPI flash, USB, 26 GPIO pins, SWD debug.

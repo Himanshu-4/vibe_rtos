@@ -1,0 +1,30 @@
+config SOC_RP2350
+    bool "Raspberry Pi RP2350"
+    select CPU_CORTEX_M33
+    help
+      RP2350 quad-core SoC by Raspberry Pi Ltd (2x Cortex-M33 + 2x RISC-V Hazard3).
+      Used on the Raspberry Pi Pico 2 board.
+
+if SOC_RP2350
+
+config SOC_HAS_FPU
+    bool
+    default y
+
+config SOC_FLASH_SIZE
+    int
+    default 2097152   # 2MB (external QSPI flash)
+
+config SOC_RAM_SIZE
+    int
+    default 524288    # 520KB (16 banks of 64KB each, minus XIP cache)
+
+config SOC_NUM_CORES
+    int
+    default 2         # 2 Cortex-M33 (RISC-V cores ignored for now)
+
+config SOC_HAS_TRUSTZONE
+    bool
+    default y         # Cortex-M33 includes TrustZone
+
+endif # SOC_RP2350

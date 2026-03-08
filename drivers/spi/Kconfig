@@ -1,0 +1,5 @@
+config SPI
+    bool "SPI driver"
+    default n
+    help
+      Enable SPI (Serial Peripheral Interface) driver.

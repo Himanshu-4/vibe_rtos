@@ -1,0 +1,43 @@
+# arch/arm/cortex_m/Kconfig — Cortex-M feature options
+
+menu "Cortex-M features"
+
+config HAS_FPU
+    bool "CPU has a floating-point unit (FPU)"
+    default n if CPU_CORTEX_M0PLUS
+    default y if CPU_CORTEX_M33
+    default y if CPU_CORTEX_M4
+    default y if CPU_CORTEX_M55
+    help
+      Enable when the Cortex-M variant has an FPU (e.g., M4F, M33 with FPU).
+      Enables saving/restoring FP registers on context switch.
+
+config HAS_MPU
+    bool "CPU has a Memory Protection Unit (MPU)"
+    default n if CPU_CORTEX_M0PLUS
+    default y if CPU_CORTEX_M33
+    default y if CPU_CORTEX_M4
+    default y if CPU_CORTEX_M55
+    help
+      Enable MPU support for memory region protection.
+
+config HAS_TRUSTZONE
+    bool "CPU has TrustZone (Secure/Non-Secure)"
+    default n
+    depends on CPU_CORTEX_M33 || CPU_CORTEX_M55
+    help
+      Enable TrustZone for ARMv8-M Mainline cores.
+      Requires secure and non-secure world separation in the linker script.
+
+config NVIC_PRIO_BITS
+    int "Number of NVIC priority bits implemented"
+    default 2 if CPU_CORTEX_M0PLUS
+    default 3 if CPU_CORTEX_M33
+    default 4 if CPU_CORTEX_M4
+    default 3 if CPU_CORTEX_M55
+    range 2 8
+    help
+      Number of priority bits in the NVIC PRIGROUP field.
+      Determines the number of configurable interrupt priorities.
+
+endmenu

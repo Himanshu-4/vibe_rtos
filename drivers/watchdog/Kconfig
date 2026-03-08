@@ -1,0 +1,6 @@
+config WATCHDOG
+    bool "Watchdog timer driver"
+    default n
+    help
+      Enable hardware watchdog timer driver.
+      RP2040: Watchdog peripheral base 0x40058000, 24-bit countdown, 1us resolution.

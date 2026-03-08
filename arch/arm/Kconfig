@@ -1,0 +1,35 @@
+# arch/arm/Kconfig — ARM-specific options
+
+menu "ARM Cortex-M variant"
+
+choice
+    prompt "Cortex-M core variant"
+    default CPU_CORTEX_M0PLUS
+
+config CPU_CORTEX_M0PLUS
+    bool "Cortex-M0+"
+    help
+      ARMv6-M Cortex-M0+. No FPU. Used by RP2040 (Raspberry Pi Pico).
+      Thumb-only instruction set.
+
+config CPU_CORTEX_M33
+    bool "Cortex-M33"
+    help
+      ARMv8-M Mainline Cortex-M33. Optional FPU, optional TrustZone.
+      Used by RP2350 (Raspberry Pi Pico 2).
+
+config CPU_CORTEX_M4
+    bool "Cortex-M4"
+    help
+      ARMv7-M Cortex-M4 with optional FPU (Cortex-M4F).
+
+config CPU_CORTEX_M55
+    bool "Cortex-M55"
+    help
+      ARMv8.1-M Cortex-M55 with Helium (M-Profile Vector Extension).
+
+endchoice
+
+endmenu
+
+source "arch/arm/cortex_m/Kconfig"

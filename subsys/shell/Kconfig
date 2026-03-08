@@ -1,0 +1,23 @@
+config SHELL
+    bool "Interactive serial shell"
+    default n
+    help
+      Enable the VibeRTOS interactive serial shell.
+      Provides a UART command-line interface for debugging and control.
+
+config SHELL_PROMPT_STR
+    string "Shell prompt string"
+    default "vibe> "
+    depends on SHELL
+
+config SHELL_MAX_ARGS
+    int "Maximum number of shell command arguments"
+    default 8
+    range 2 32
+    depends on SHELL
+
+config SHELL_BUF_SIZE
+    int "Shell input line buffer size in bytes"
+    default 128
+    range 32 512
+    depends on SHELL

@@ -1,0 +1,39 @@
+# VibeRTOS Top-level Kconfig
+# This is the root Kconfig file. All subsystem Kconfigs are sourced from here.
+
+mainmenu "VibeRTOS Configuration"
+
+# Source architecture Kconfig
+source "arch/Kconfig"
+
+# Source kernel Kconfig
+source "kernel/Kconfig"
+
+# Source drivers Kconfig
+source "drivers/Kconfig"
+
+# Source subsystems Kconfig
+source "subsys/Kconfig"
+
+# Top-level board/SoC selection helpers
+config BOARD
+    string "Board name"
+    default "rpi_pico"
+    help
+      The name of the board being targeted. This selects the board-specific
+      Kconfig and device tree files.
+
+config SOC
+    string "SoC name"
+    default ""
+    help
+      The SoC name. Usually selected automatically by the board Kconfig.
+
+config SYS_CLOCK_HZ
+    int "System tick rate in Hz"
+    default 1000
+    range 100 10000
+    help
+      The system tick frequency in Hz. Higher values give finer timer
+      resolution but increase interrupt overhead.
+      Common values: 100, 250, 500, 1000.

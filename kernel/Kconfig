@@ -1,0 +1,113 @@
+menu "Kernel Configuration"
+
+config KERNEL_PREEMPT_ENABLED
+    bool "Enable preemptive scheduling"
+    default y
+    help
+      When enabled, a higher-priority thread can preempt a lower-priority
+      one at any preemption point (system call, timer tick, IPI).
+      Disable only for cooperative scheduling.
+
+config NUM_PRIORITIES
+    int "Number of thread priority levels"
+    default 32
+    range 2 64
+    help
+      Total number of distinct priority levels (0 = lowest, N-1 = highest).
+      Each level has its own run queue. A larger value increases RAM usage
+      slightly but provides finer scheduling granularity.
+
+config TIMESLICE_MS
+    int "Time-slice duration in milliseconds (round-robin)"
+    default 10
+    range 1 1000
+    depends on KERNEL_PREEMPT_ENABLED
+    help
+      For threads at the same priority, the scheduler performs round-robin
+      with this time slice. Set to 0 to disable time-slicing.
+
+config TICKLESS_IDLE
+    bool "Enable tickless idle (dynamic tick)"
+    default y
+    help
+      When the system is idle, suppresses periodic tick interrupts and
+      programs the hardware timer to wake up only for the next scheduled
+      event. Reduces power consumption significantly.
+
+config SMP
+    bool "Symmetric Multi-Processing (SMP) support"
+    default n
+    help
+      Enable SMP support for multi-core processors (e.g., RP2350 dual-core
+      Cortex-M33). Adds per-CPU data structures and IPI (inter-processor
+      interrupt) for cross-core reschedule.
+
+config SMP_NUM_CPUS
+    int "Number of CPUs"
+    default 2
+    range 2 4
+    depends on SMP
+    help
+      Number of CPU cores to use. Must match the actual hardware.
+
+config HEAP_MEM
+    bool "Enable dynamic heap memory allocator"
+    default y
+    help
+      Enables vibe_heap_alloc() / vibe_heap_free() backed by a statically
+      reserved heap region. The heap size is set by CONFIG_HEAP_SIZE.
+
+config HEAP_SIZE
+    int "Heap size in bytes"
+    default 4096
+    range 256 131072
+    depends on HEAP_MEM
+    help
+      Size of the heap region in bytes. Must fit within available RAM after
+      the kernel, stack, and static data are placed.
+
+config STACK_CANARY
+    bool "Enable stack overflow canary detection"
+    default y
+    help
+      Places a magic value (canary) at the bottom of each thread stack.
+      The kernel checks the canary on context switch; if corrupted, a
+      fatal error is triggered. Small overhead in exchange for safety.
+
+config TLS
+    bool "Enable thread-local storage (TLS)"
+    default y
+    help
+      Allocates a small per-thread data block (TLS) within each thread's
+      stack region. Used by subsystems like logging for per-thread state.
+
+config SCHED_DYNAMIC_PRIORITY
+    bool "Enable dynamic priority switching"
+    default y
+    help
+      Allows threads to change their own or another thread's priority at
+      runtime with vibe_thread_set_priority(). Required for priority
+      inheritance in mutexes.
+
+config IDLE_STACK_SIZE
+    int "Idle thread stack size in bytes"
+    default 256
+    range 128 2048
+    help
+      Stack size for the per-CPU idle thread.
+
+config SYS_WORKQ_STACK_SIZE
+    int "System work queue thread stack size in bytes"
+    default 1024
+    range 512 8192
+    help
+      Stack size for the system work queue worker thread.
+
+config SYS_WORKQ_PRIORITY
+    int "System work queue thread priority"
+    default 30
+    range 0 31
+    help
+      Priority of the system work queue worker thread.
+
+endmenu

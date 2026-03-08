@@ -1,0 +1,6 @@
+config BOARD_RPI_PICO2
+    bool "Raspberry Pi Pico 2"
+    select SOC_RP2350
+    help
+      Raspberry Pi Pico 2 board based on the RP2350 microcontroller.
+      Features: 2MB QSPI flash, USB, 26 GPIO pins, hardware FPU, TrustZone.

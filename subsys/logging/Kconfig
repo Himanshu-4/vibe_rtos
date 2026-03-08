@@ -1,0 +1,40 @@
+config LOG
+    bool "Logging subsystem"
+    default y
+    help
+      Enable the VibeRTOS levelled logging subsystem.
+
+config LOG_DEFAULT_LEVEL
+    int "Default global log level (0=ERR 1=WRN 2=INF 3=DBG)"
+    default 2
+    range 0 3
+    depends on LOG
+
+config LOG_BACKEND_UART
+    bool "UART logging backend"
+    default y
+    depends on LOG && UART
+    help
+      Output log messages over UART.
+
+config LOG_BACKEND_RTT
+    bool "RTT (SEGGER Real-Time Transfer) logging backend"
+    default n
+    depends on LOG
+    help
+      Output log messages via SEGGER RTT (requires RTT library).
+
+config LOG_DEFERRED
+    bool "Deferred (asynchronous) logging"
+    default n
+    depends on LOG
+    help
+      Buffer log messages in a ring buffer and flush from a dedicated
+      low-priority thread. Reduces latency impact of logging on time-
+      critical threads.
+
+config LOG_BUFFER_SIZE
+    int "Deferred log ring buffer size in bytes"
+    default 1024
+    range 256 16384
+    depends on LOG && LOG_DEFERRED

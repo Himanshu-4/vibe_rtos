@@ -1,0 +1,26 @@
+config SOC_RP2040
+    bool "Raspberry Pi RP2040"
+    select CPU_CORTEX_M0PLUS
+    help
+      RP2040 dual-core Cortex-M0+ SoC by Raspberry Pi Ltd.
+      Used on the Raspberry Pi Pico board.
+
+if SOC_RP2040
+
+config SOC_HAS_FPU
+    bool
+    default n
+
+config SOC_FLASH_SIZE
+    int
+    default 2097152  # 2MB (external QSPI flash, not on-die)
+
+config SOC_RAM_SIZE
+    int
+    default 270336   # 264KB SRAM (6 banks: 4x16K + 2x4K)
+
+config SOC_NUM_CORES
+    int
+    default 2        # Dual-core Cortex-M0+
+
+endif # SOC_RP2040

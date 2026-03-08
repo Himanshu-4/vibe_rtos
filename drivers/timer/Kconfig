@@ -1,0 +1,6 @@
+config TIMER_HW
+    bool "Hardware timer / PWM driver"
+    default n
+    help
+      Enable hardware timer and PWM driver.
+      On RP2040: uses the PWM slice hardware (8 slices, 2 channels each).

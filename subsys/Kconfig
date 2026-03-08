@@ -1,0 +1,8 @@
+# subsys/Kconfig — Optional subsystems
+
+menu "Subsystems"
+
+source "subsys/shell/Kconfig"
+source "subsys/logging/Kconfig"
+
+endmenu

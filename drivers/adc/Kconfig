@@ -1,0 +1,6 @@
+config ADC
+    bool "ADC driver"
+    default n
+    help
+      Enable ADC (Analog-to-Digital Converter) driver.
+      RP2040: 12-bit SAR ADC, 4 channels + temp sensor (base 0x4004C000).

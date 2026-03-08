@@ -1,0 +1,6 @@
+config GPIO
+    bool "GPIO driver"
+    default y
+    help
+      Enable the GPIO (General Purpose Input/Output) driver.
+      Provides pin direction, read, write, and interrupt configuration.
