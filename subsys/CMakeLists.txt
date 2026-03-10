@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 3.20)
 
-add_subdirectory(shell)
-add_subdirectory(logging)
+# Subsystem sources — always compiled; individual files guard features with
+# weak symbols so the binary links even when CONFIG_* is not set.
+set(SUBSYS_SOURCES
+    logging/log.c
+    shell/shell.c
+)
 
-# Create interface library for subsystems
-add_library(vibe_subsys INTERFACE)
+add_library(vibe_subsys STATIC ${SUBSYS_SOURCES})
 
-target_include_directories(vibe_subsys INTERFACE
+target_include_directories(vibe_subsys PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/shell
+    ${CMAKE_CURRENT_SOURCE_DIR}/logging
     ${VIBE_RTOS_ROOT}/include
+)
+
+target_compile_options(vibe_subsys PRIVATE
+    -Wall -Wextra -Wno-unused-parameter
 )

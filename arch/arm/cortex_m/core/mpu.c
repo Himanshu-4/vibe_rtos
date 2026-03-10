@@ -20,7 +20,7 @@
  * =============================================================================
  */
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "arch/arm/cortex_m/arch.h"
 #include "vibe/types.h"
 #include "vibe/sys/printk.h"
 #include <stdint.h>

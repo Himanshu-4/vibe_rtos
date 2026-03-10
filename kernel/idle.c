@@ -18,7 +18,7 @@
 #include "vibe/types.h"
 #include "vibe/sys/printk.h"
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* External reference to the idle thread TCB — set by kernel/init.c. */
 extern vibe_thread_t *g_idle_thread;

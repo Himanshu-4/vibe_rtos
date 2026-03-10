@@ -10,7 +10,7 @@
 #include "vibe/sys/list.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 vibe_err_t vibe_sem_init(vibe_sem_t *sem, uint32_t initial, uint32_t max)
 {

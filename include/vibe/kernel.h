@@ -93,7 +93,10 @@ void vibe_init(void) __attribute__((noreturn));
  *
  * @return Current tick value.
  */
+#ifndef VIBE_TICK_GET_DECLARED
+#define VIBE_TICK_GET_DECLARED
 vibe_tick_t vibe_tick_get(void);
+#endif
 
 /**
  * @brief Return system uptime in milliseconds.

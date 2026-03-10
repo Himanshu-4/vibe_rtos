@@ -10,7 +10,7 @@
 #include "vibe/sys/list.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* Each free block stores a pointer to the next free block at its start. */
 typedef struct _free_block {

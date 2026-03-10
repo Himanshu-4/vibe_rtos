@@ -7,12 +7,12 @@ cmake_minimum_required(VERSION 3.20)
 #         -DVIBE_BOARD=rpi_pico ..
 #   make
 
+project(hello_world C CXX ASM)
+
 # Make vibe_rtos findable from this directory
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 find_package(vibe_rtos REQUIRED)
-
-project(hello_world C CXX ASM)
 
 # Load YAML config if present
 include(yaml_config)

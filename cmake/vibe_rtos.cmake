@@ -31,14 +31,35 @@ set(VIBE_SOC_DIR      ${VIBE_RTOS_ROOT}/soc)
 # vibe_add_application(name)
 #
 # Macro to set up a VibeRTOS application target.
+# Must be called after project() so that C/ASM languages are enabled.
+#
 # Usage in an out-of-tree CMakeLists.txt:
 #
+#   project(my_app C ASM)
 #   find_package(vibe_rtos REQUIRED)
 #   vibe_add_application(my_app)
 #   target_sources(my_app PRIVATE main.c)
 #
 # -----------------------------------------------------------------------
 macro(vibe_add_application APP_NAME)
+    # Build VibeRTOS libraries as part of this application build.
+    # Guards ensure each subdirectory is only added once.
+    if(NOT TARGET vibe_lib)
+        add_subdirectory(${VIBE_RTOS_ROOT}/lib     ${CMAKE_BINARY_DIR}/_vibe/lib)
+    endif()
+    if(NOT TARGET vibe_kernel)
+        add_subdirectory(${VIBE_RTOS_ROOT}/kernel  ${CMAKE_BINARY_DIR}/_vibe/kernel)
+    endif()
+    if(NOT TARGET vibe_arch)
+        add_subdirectory(${VIBE_RTOS_ROOT}/arch    ${CMAKE_BINARY_DIR}/_vibe/arch)
+    endif()
+    if(NOT TARGET vibe_drivers)
+        add_subdirectory(${VIBE_RTOS_ROOT}/drivers ${CMAKE_BINARY_DIR}/_vibe/drivers)
+    endif()
+    if(NOT TARGET vibe_subsys)
+        add_subdirectory(${VIBE_RTOS_ROOT}/subsys  ${CMAKE_BINARY_DIR}/_vibe/subsys)
+    endif()
+
     # Create the executable target
     add_executable(${APP_NAME})
 
@@ -48,13 +69,15 @@ macro(vibe_add_application APP_NAME)
         ${CMAKE_BINARY_DIR}/include/generated
     )
 
-    # Link against the kernel and architecture libraries
+    # Link against the kernel and architecture libraries.
+    # Order matters for static libs: higher-level libs first.
     target_link_libraries(${APP_NAME} PRIVATE
         vibe_kernel
         vibe_arch
-        vibe_drivers
         vibe_subsys
+        vibe_drivers
         vibe_lib
+        vibe_ring_buffer
     )
 
     # Compile definitions
@@ -80,6 +103,10 @@ endmacro()
 # applies its linker script.
 # -----------------------------------------------------------------------
 macro(vibe_set_board BOARD_NAME)
+    if("${BOARD_NAME}" STREQUAL "")
+        message(FATAL_ERROR "vibe_set_board: BOARD_NAME is empty. Pass -DVIBE_BOARD=<board> to cmake.")
+    endif()
+
     set(VIBE_BOARD ${BOARD_NAME})
     set(VIBE_BOARD_DIR ${VIBE_BOARDS_DIR}/arm/${BOARD_NAME})
 

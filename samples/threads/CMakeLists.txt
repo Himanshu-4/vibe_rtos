@@ -15,12 +15,18 @@ cmake_minimum_required(VERSION 3.20)
 # Flash:
 #   ../../scripts/flash.sh --board rpi_pico --elf threads
 
+project(threads C ASM)
+
 # Make vibe_rtos findable from this directory
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 find_package(vibe_rtos REQUIRED)
 
-project(threads C ASM)
+# Default board if not provided via -DVIBE_BOARD=<board>
+if(NOT DEFINED VIBE_BOARD OR VIBE_BOARD STREQUAL "")
+    set(VIBE_BOARD "rpi_pico" CACHE STRING "Target board (e.g. rpi_pico, rpi_pico2)")
+    message(STATUS "VIBE_BOARD not set, defaulting to '${VIBE_BOARD}'")
+endif()
 
 # Create the application using the VibeRTOS CMake helper
 vibe_add_application(threads)

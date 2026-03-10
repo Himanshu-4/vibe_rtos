@@ -39,6 +39,9 @@ typedef enum {
  * Power management ops
  * --------------------------------------------------------------------- */
 
+/* Forward declaration so vibe_pm_ops_t can reference vibe_device */
+struct vibe_device;
+
 typedef struct vibe_pm_ops {
     /** Suspend the device (called before entering low-power state). */
     vibe_err_t (*suspend)(const struct vibe_device *dev);

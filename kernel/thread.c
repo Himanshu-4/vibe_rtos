@@ -15,7 +15,7 @@
 #include "vibe/sys/printk.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* -----------------------------------------------------------------------
  * Stack canary value

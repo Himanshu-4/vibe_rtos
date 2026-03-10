@@ -24,6 +24,7 @@ add_library(vibe_kernel STATIC ${KERNEL_SOURCES})
 
 target_include_directories(vibe_kernel PUBLIC
     ${VIBE_RTOS_ROOT}/include
+    ${VIBE_RTOS_ROOT}/arch/arm/cortex_m/include
     ${CMAKE_BINARY_DIR}/include/generated
 )
 

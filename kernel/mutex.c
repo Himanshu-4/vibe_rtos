@@ -10,7 +10,7 @@
 #include "vibe/sys/list.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 vibe_err_t vibe_mutex_init(vibe_mutex_t *mutex)
 {

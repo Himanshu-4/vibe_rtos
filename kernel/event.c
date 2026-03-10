@@ -10,7 +10,7 @@
 #include "vibe/sys/list.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* Per-thread event wait context stored inline using the TLS field. */
 typedef struct {

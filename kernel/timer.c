@@ -14,7 +14,7 @@
 #include "vibe/sys/printk.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* -----------------------------------------------------------------------
  * Active timer list (singly-linked, sorted by remaining descending)

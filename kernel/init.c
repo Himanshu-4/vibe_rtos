@@ -17,7 +17,7 @@
 #include "vibe/sys/printk.h"
 
 /* Include the arch interface — must be provided by the selected arch. */
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 VIBE_LOG_MODULE_REGISTER(kernel_init, VIBE_LOG_LEVEL_INF);
 
@@ -104,7 +104,7 @@ void vibe_init(void)
                                              &attr,
                                              _idle_stack);
         if (err != VIBE_OK) {
-            vibe_printk("FATAL: failed to create idle thread (%d)\n", err);
+            vibe_printk("FATAL: failed to create idle thread (%ld)\n", err);
             /* Halt — cannot continue without idle thread. */
             for (;;) {}
         }
@@ -120,7 +120,7 @@ void vibe_init(void)
                                           CONFIG_SYS_WORKQ_PRIORITY,
                                           "sys_workq");
         if (err != VIBE_OK) {
-            vibe_printk("WARN: failed to create system work queue (%d)\n", err);
+            vibe_printk("WARN: failed to create system work queue (%ld)\n", err);
         }
     }
 
@@ -221,7 +221,7 @@ void _vibe_device_init_level(vibe_init_level_t level)
         if (dev->init_fn != NULL) {
             vibe_err_t err = dev->init_fn(dev);
             if (err != VIBE_OK) {
-                VIBE_LOG_WRN("device '%s' init failed: %d", dev->name, err);
+                VIBE_LOG_WRN("device '%s' init failed: %ld", dev->name, err);
             }
         }
     }

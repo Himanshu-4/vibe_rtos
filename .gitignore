@@ -1,4 +1,43 @@
-/build/
+# Build directories (any depth)
+build/
+**/build/
+_build/
+out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_CPack_Packages/
+*.cmake
+!cmake/**/*.cmake
+
+# Ninja
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Compiler output
+*.o
+*.obj
+*.a
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.d
+
+# IDE / editor
+.vscode/
+.claude/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local config (not tracked)
 plan.md
 MEMORY.md
-.vscode/

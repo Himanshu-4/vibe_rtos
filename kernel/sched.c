@@ -18,7 +18,7 @@
 #include "vibe/sys/printk.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 /* -----------------------------------------------------------------------
  * Run queues — one list per priority level
@@ -54,7 +54,7 @@ vibe_thread_t *g_idle_thread = NULL;
 
 static int              g_sched_lock_count = 0;
 static vibe_sched_mode_t g_sched_mode       = VIBE_SCHED_MID;
-static vibe_spinlock_t   g_sched_lock       = VIBE_SPINLOCK_INIT;
+static vibe_spinlock_t   g_sched_lock __attribute__((unused)) = VIBE_SPINLOCK_INIT;
 
 /* -----------------------------------------------------------------------
  * Internal helpers

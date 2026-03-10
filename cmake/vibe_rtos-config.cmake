@@ -12,7 +12,7 @@
 
 # Locate the VibeRTOS root relative to this config file
 get_filename_component(_VIBE_CONFIG_DIR "${CMAKE_CURRENT_LIST_FILE}" DIRECTORY)
-get_filename_component(VIBE_RTOS_ROOT   "${_VIBE_CONFIG_DIR}/../../.." ABSOLUTE)
+get_filename_component(VIBE_RTOS_ROOT   "${_VIBE_CONFIG_DIR}/.." ABSOLUTE)
 
 # Include the main helper
 include("${CMAKE_CURRENT_LIST_DIR}/vibe_rtos.cmake")

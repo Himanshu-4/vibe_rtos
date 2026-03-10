@@ -9,7 +9,7 @@
 #include "vibe/types.h"
 #include <string.h>
 
-#include "arch/arm/cortex_m/include/arch/arm/cortex_m/arch.h"
+#include "vibe/arch.h"
 
 vibe_err_t vibe_pipe_init(vibe_pipe_t *pipe, void *buf, size_t size)
 {
