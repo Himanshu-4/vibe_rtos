@@ -1,3 +1,3 @@
 if(CONFIG_SPI)
-    target_sources(vibe_drivers INTERFACE spi.c)
+    target_sources(vibe_drivers PRIVATE spi.c)
 endif()

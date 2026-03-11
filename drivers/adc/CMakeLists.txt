@@ -1,3 +1,3 @@
 if(CONFIG_ADC)
-    target_sources(vibe_drivers INTERFACE adc.c)
+    target_sources(vibe_drivers PRIVATE adc.c)
 endif()

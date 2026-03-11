@@ -15,6 +15,10 @@ message(STATUS "VibeRTOS root: ${VIBE_RTOS_ROOT}")
 list(APPEND CMAKE_MODULE_PATH ${VIBE_RTOS_ROOT}/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${VIBE_RTOS_ROOT}/cmake)
 
+# Run Kconfig integration — generates autoconf.h, sdkconfig.cmake, sdkconfig.json
+# and registers menuconfig / guiconfig / defconfig / saveconfig targets.
+include(kconfig)
+
 # Global include paths
 set(VIBE_INCLUDE_DIRS
     ${VIBE_RTOS_ROOT}/include

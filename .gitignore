@@ -38,6 +38,9 @@ build.ninja
 *.swo
 *~
 
+# Python virtualenv
+.venv/
+
 # Local config (not tracked)
 plan.md
 MEMORY.md
