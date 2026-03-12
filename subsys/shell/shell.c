@@ -93,10 +93,11 @@ static int _cmd_mem_stats(int argc, char *argv[])
     (void)argc; (void)argv;
     vibe_shell_print("Memory stats:\r\n");
 #ifdef CONFIG_HEAP_MEM
-    size_t used, free;
-    vibe_heap_stats(&used, &free);
-    /* Simple integer print */
-    vibe_printk("  heap: used=%u free=%u\r\n", (unsigned)used, (unsigned)free);
+    vibe_heap_stats_t hs;
+    vibe_heap_stats(&hs);
+    vibe_printk("  heap: used=%u free=%u largest=%u allocs=%u\r\n",
+                (unsigned)hs.used, (unsigned)hs.free,
+                (unsigned)hs.largest_free, (unsigned)hs.alloc_count);
 #else
     vibe_shell_print("  heap: disabled\r\n");
 #endif
@@ -115,7 +116,7 @@ static int _cmd_uptime(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     uint32_t ms = vibe_uptime_ms();
-    vibe_printk("Uptime: %u ms\r\n", ms);
+    vibe_printk("Uptime: %lu ms\r\n", (unsigned long)ms);
     return 0;
 }
 

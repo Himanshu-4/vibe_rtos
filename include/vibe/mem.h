@@ -105,37 +105,10 @@ vibe_err_t vibe_mem_pool_free(vibe_mem_pool_t *pool, void *ptr);
 uint32_t vibe_mem_pool_free_count(const vibe_mem_pool_t *pool);
 
 /* -----------------------------------------------------------------------
- * Dynamic heap (only available when CONFIG_HEAP_MEM is defined)
+ * Dynamic heap — full API lives in vibe/heap.h
  * --------------------------------------------------------------------- */
 
-#ifdef CONFIG_HEAP_MEM
-
-/**
- * @brief Allocate size bytes from the heap.
- *
- * Uses a first-fit free list. Thread-safe via spinlock.
- *
- * @param size  Number of bytes to allocate.
- * @return      Pointer to allocated memory, or NULL if out of memory.
- */
-void *vibe_heap_alloc(size_t size);
-
-/**
- * @brief Free a heap allocation.
- *
- * @param ptr  Pointer returned by vibe_heap_alloc(). NULL is a no-op.
- */
-void vibe_heap_free(void *ptr);
-
-/**
- * @brief Query heap usage statistics.
- *
- * @param[out] used  Bytes currently allocated.
- * @param[out] free  Bytes currently free.
- */
-void vibe_heap_stats(size_t *used, size_t *free);
-
-#endif /* CONFIG_HEAP_MEM */
+#include "vibe/heap.h"
 
 #ifdef __cplusplus
 }

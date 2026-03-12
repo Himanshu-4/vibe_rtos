@@ -4,14 +4,20 @@ cmake_minimum_required(VERSION 3.20)
 #
 # Blinks the on-board LED (GPIO 25) on the Raspberry Pi Pico / Pico 2.
 #
-# Build:
-#   mkdir build && cd build
+# Build (toolchain auto-selected from VIBE_BOARD):
+#   cmake -DVIBE_BOARD=rpi_pico  -B build .
+#   cmake -DVIBE_BOARD=rpi_pico2 -B build .
+#
+# Or pass the toolchain explicitly (overrides auto-selection):
 #   cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/toolchains/arm-none-eabi.cmake \
-#         -DVIBE_BOARD=rpi_pico ..
-#   make
+#         -DVIBE_BOARD=rpi_pico -B build .
 #
 # Flash:
 #   ../../scripts/flash.sh --board rpi_pico --elf blinky
+
+# --- Board and toolchain: MUST come before project() ---
+set(VIBE_BOARD "rpi_pico" CACHE STRING "Target board name")
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/vibe_board_toolchain.cmake")
 
 project(blinky C ASM)
 

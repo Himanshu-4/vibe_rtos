@@ -52,6 +52,21 @@ set(VIBE_ARCH_FLAGS
     "-fno-exceptions"
 )
 
+# --- Warnings ---
+# -Werror is added via add_compile_options (compile-only; never reaches the linker).
+# Keep explicit -Wno-* suppressions here for known-safe patterns.
+set(VIBE_WARN_FLAGS
+    "-Wall"
+    "-Wextra"
+    "-Werror"
+    "-Wshadow"
+    "-Wdouble-promotion"
+    "-Wformat=2"
+    "-Wundef"
+    "-Wno-unused-parameter"
+    "-Wno-pedantic"
+)
+
 # Bare-metal linker flags.
 # -nostartfiles : do not link OS startup files (we provide our own Reset_Handler)
 # -ffreestanding: freestanding environment (no OS assumptions)
@@ -82,17 +97,25 @@ set(CMAKE_EXE_LINKER_FLAGS_INIT  "${VIBE_LD_FLAGS_STR}")
 # or:
 #   set(VIBE_CPU_FLAGS "-mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard")
 
+# --- CPU flags: auto-derive from VIBE_BOARD if not already set ---
 if(NOT DEFINED VIBE_CPU_FLAGS)
-    # Default: Cortex-M0+ (Raspberry Pi Pico)
-    # Store as a CMake list (semicolon-separated) so each flag is a separate argument
-    set(VIBE_CPU_FLAGS "-mcpu=cortex-m0plus;-mfloat-abi=soft")
-    message(STATUS "VIBE_CPU_FLAGS not set — defaulting to Cortex-M0+")
+    if("${VIBE_BOARD}" STREQUAL "rpi_pico")
+        set(VIBE_CPU_FLAGS "-mcpu=cortex-m0plus;-mfloat-abi=soft")
+        message(STATUS "Toolchain: rpi_pico → Cortex-M0+, soft-float")
+    elseif("${VIBE_BOARD}" STREQUAL "rpi_pico2")
+        set(VIBE_CPU_FLAGS "-mcpu=cortex-m33;-mfpu=fpv5-sp-d16;-mfloat-abi=hard")
+        message(STATUS "Toolchain: rpi_pico2 → Cortex-M33, FPv5 hard-float")
+    else()
+        set(VIBE_CPU_FLAGS "-mcpu=cortex-m0plus;-mfloat-abi=soft")
+        message(STATUS "Toolchain: unknown board '${VIBE_BOARD}' — defaulting to Cortex-M0+")
+    endif()
 endif()
 
-# Split string flags into a proper CMake list before passing to compiler
+# Split into a proper CMake list before passing to compiler
 separate_arguments(VIBE_CPU_FLAGS_LIST UNIX_COMMAND "${VIBE_CPU_FLAGS}")
 
 add_compile_options(${VIBE_CPU_FLAGS_LIST})
+add_compile_options(${VIBE_WARN_FLAGS})   # warnings-as-errors, compile-only
 add_link_options(${VIBE_CPU_FLAGS_LIST})
 
 # Helper to generate .bin and .hex from ELF

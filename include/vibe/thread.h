@@ -143,8 +143,9 @@ typedef struct {
  */
 #define VIBE_THREAD_DEFINE(tname, stack_sz, entry_fn, user_arg, prio)   \
     static uint8_t _##tname##_stack[stack_sz]                           \
-        __attribute__((aligned(8)));                                     \
-    static vibe_thread_t tname = {                                       \
+        __attribute__((aligned(8), used));                               \
+    static vibe_thread_t tname                                           \
+        __attribute__((used)) = {                                        \
         .name          = #tname,                                         \
         .entry         = (entry_fn),                                     \
         .arg           = (user_arg),                                     \

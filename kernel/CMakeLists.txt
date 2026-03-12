@@ -13,7 +13,6 @@ set(KERNEL_SOURCES
     pipe.c
     workq.c
     mem_pool.c
-    heap.c
     idle.c
     smp.c
     spinlock.c
@@ -28,11 +27,7 @@ target_include_directories(vibe_kernel PUBLIC
     ${CMAKE_BINARY_DIR}/include/generated
 )
 
-target_compile_options(vibe_kernel PRIVATE
-    -Wall
-    -Wextra
-    -Wno-unused-parameter
-)
+# Warning flags are set globally by the toolchain file.
 
 # Kernel depends on architecture library for arch_* symbols
 # (arch lib links against kernel for kernel_* callbacks — circular resolved at link)

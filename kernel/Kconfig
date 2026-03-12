@@ -66,6 +66,37 @@ config HEAP_SIZE
       Size of the heap region in bytes. Must fit within available RAM after
       the kernel, stack, and static data are placed.
 
+choice HEAP_ALLOCATOR
+    prompt "Heap allocator algorithm"
+    depends on HEAP_MEM
+    default HEAP_ALLOCATOR_TLSF
+    help
+      Select the allocation algorithm used by vibe_heap_alloc() / vibe_malloc().
+
+config HEAP_ALLOCATOR_TLSF
+    bool "TLSF — Two-Level Segregated Fit (O(1) real-time)"
+    help
+      O(1) allocation and free. Uses a two-level bitmap to locate a suitable
+      free block in constant time, with no loops or searching. Best choice for
+      hard real-time systems or when allocation latency must be bounded.
+      Control structure overhead: ~700 bytes (independent of heap size).
+
+config HEAP_ALLOCATOR_BEST_FIT
+    bool "Best Fit (O(n), lowest fragmentation)"
+    help
+      Scans all free blocks and picks the smallest one that fits the request.
+      Minimises wasted space per allocation but requires a full list walk.
+      Good when fragmentation matters more than allocation latency.
+
+config HEAP_ALLOCATOR_FIRST_FIT
+    bool "First Fit (O(n), lowest overhead)"
+    help
+      Returns the first free block large enough to satisfy the request.
+      Simplest algorithm, lowest code size. Suitable for systems with
+      predictable allocation patterns or very small heaps.
+
+endchoice
+
 config STACK_CANARY
     bool "Enable stack overflow canary detection"
     default y

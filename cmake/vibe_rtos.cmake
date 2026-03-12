@@ -64,6 +64,18 @@ macro(vibe_add_application APP_NAME)
         add_subdirectory(${VIBE_RTOS_ROOT}/subsys  ${CMAKE_BINARY_DIR}/_vibe/subsys)
     endif()
 
+    # Ensure Kconfig outputs are regenerated before any library or app source
+    # is compiled.  kconfig_gen is an ALL target that fires gen_configs.py
+    # whenever sdkconfig is newer than autoconf.h / sdkconfig.cmake.
+    if(TARGET kconfig_gen)
+        add_dependencies(vibe_lib     kconfig_gen)
+        add_dependencies(vibe_kernel  kconfig_gen)
+        add_dependencies(vibe_arch    kconfig_gen)
+        add_dependencies(vibe_drivers kconfig_gen)
+        add_dependencies(vibe_subsys  kconfig_gen)
+        add_dependencies(vibe_heap    kconfig_gen)
+    endif()
+
     # Create the executable target
     add_executable(${APP_NAME})
 
@@ -73,15 +85,19 @@ macro(vibe_add_application APP_NAME)
         ${CMAKE_BINARY_DIR}/include/generated
     )
 
-    # Link against the kernel and architecture libraries.
-    # Order matters for static libs: higher-level libs first.
+    # Link all VibeRTOS static libraries inside a group so the linker makes
+    # multiple passes to resolve cross-library circular references
+    # (e.g. vibe_heap → spinlock in vibe_kernel → heap in vibe_heap).
     target_link_libraries(${APP_NAME} PRIVATE
+        -Wl,--start-group
         vibe_kernel
         vibe_arch
         vibe_subsys
         vibe_drivers
+        vibe_heap
         vibe_lib
         vibe_ring_buffer
+        -Wl,--end-group
     )
 
     # Compile definitions

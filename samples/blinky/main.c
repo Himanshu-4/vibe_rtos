@@ -34,7 +34,7 @@ static void blinky_thread_entry(void *arg)
     /* Configure LED pin as output, no pull. */
     vibe_err_t err = gpio_configure(gpio_dev, LED_PIN, GPIO_DIR_OUTPUT, GPIO_PULL_NONE);
     if (err != VIBE_OK) {
-        vibe_printk("[blinky] gpio_configure failed: %d\n", err);
+        vibe_printk("[blinky] gpio_configure failed: %ld\n", (long)err);
         return;
     }
 

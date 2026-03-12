@@ -9,9 +9,7 @@ target_include_directories(vibe_drivers PUBLIC
     ${VIBE_RTOS_ROOT}/include/drivers
 )
 
-target_compile_options(vibe_drivers PRIVATE
-    -Wall -Wextra -Wno-unused-parameter
-)
+# Warning flags are set globally by the toolchain file.
 
 # Add driver subdirectories — each appends its sources via target_sources PRIVATE
 add_subdirectory(gpio)

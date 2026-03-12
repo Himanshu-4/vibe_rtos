@@ -37,7 +37,7 @@ static uint32_t    g_ready_mask = 0U;
  * Sleep list — sorted by expiry tick (ascending)
  * --------------------------------------------------------------------- */
 
-static vibe_list_t g_sleep_list;
+vibe_list_t g_sleep_list;
 
 /* -----------------------------------------------------------------------
  * Current running thread (per-CPU; single CPU for now)

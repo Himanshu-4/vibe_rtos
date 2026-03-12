@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 add_subdirectory(ring_buffer)
+add_subdirectory(heap)
 
 add_library(vibe_lib INTERFACE)
 

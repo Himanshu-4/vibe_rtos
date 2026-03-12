@@ -18,9 +18,7 @@ target_include_directories(vibe_subsys PUBLIC
     ${CMAKE_BINARY_DIR}/include/generated
 )
 
-target_compile_options(vibe_subsys PRIVATE
-    -Wall -Wextra -Wno-unused-parameter
-)
+# Warning flags are set globally by the toolchain file.
 
 # Coredump subsystem — sources conditionally added by its own CMakeLists.txt
 add_subdirectory(coredump)

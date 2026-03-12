@@ -112,16 +112,42 @@ else()
     message(STATUS "Kconfig: sdkconfig.cmake not found — CONFIG_* variables unavailable")
 endif()
 
-# Add generated header directory to the global include path
-include_directories(${CMAKE_BINARY_DIR}/include/generated)
+# ---------------------------------------------------------------------------
+# Re-trigger cmake configure whenever sdkconfig or any Kconfig file changes.
+#
+# This causes cmake to re-run gen_configs.py at configure time, re-include
+# sdkconfig.cmake (updating all CONFIG_* CMake variables), and regenerate
+# the build system — so subsequent ninja invocations reflect the new config.
+# ---------------------------------------------------------------------------
+file(GLOB_RECURSE _ALL_KCONFIG_FILES
+    ${VIBE_RTOS_ROOT}/Kconfig
+    ${VIBE_RTOS_ROOT}/*/Kconfig
+    ${VIBE_RTOS_ROOT}/*/*/Kconfig
+    ${VIBE_RTOS_ROOT}/*/*/*/Kconfig
+)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${SDKCONFIG}
+    ${_ALL_KCONFIG_FILES}
+)
+
+# ---------------------------------------------------------------------------
+# Force-include autoconf.h into every translation unit.
+#
+# This ensures Ninja's implicit dependency scanner connects every compiled
+# object file to autoconf.h.  When autoconf.h is regenerated (because
+# sdkconfig changed), Ninja recompiles every object — giving a true
+# "rebuild everything on config change" guarantee.
+# ---------------------------------------------------------------------------
+add_compile_options(-include ${AUTOCONF_H})
 
 # ---------------------------------------------------------------------------
 # Build-time regen: re-run gen_configs.py whenever sdkconfig changes
-# (e.g. after running menuconfig) so autoconf.h stays in sync.
+# (e.g. after running menuconfig) so autoconf.h / sdkconfig.cmake stay in sync.
+# All three output files are listed so Ninja tracks them as build products.
 # ---------------------------------------------------------------------------
 if(_KCONFIGLIB_RC EQUAL 0)
     add_custom_command(
-        OUTPUT  ${AUTOCONF_H} ${SDKCONFIG_JSON}
+        OUTPUT  ${AUTOCONF_H} ${SDKCONFIG_CMAKE} ${SDKCONFIG_JSON}
         COMMAND ${_KCONFIG_GEN_CMD}
         WORKING_DIRECTORY ${VIBE_RTOS_ROOT}
         DEPENDS ${SDKCONFIG}
@@ -129,8 +155,14 @@ if(_KCONFIGLIB_RC EQUAL 0)
         VERBATIM
     )
     add_custom_target(kconfig_gen ALL
-        DEPENDS ${AUTOCONF_H} ${SDKCONFIG_JSON}
+        DEPENDS ${AUTOCONF_H} ${SDKCONFIG_CMAKE} ${SDKCONFIG_JSON}
         COMMENT "Kconfig outputs up to date"
+    )
+else()
+    # No kconfiglib — create a no-op target so vibe libraries can still
+    # add_dependencies(... kconfig_gen) unconditionally.
+    add_custom_target(kconfig_gen ALL
+        COMMENT "kconfig_gen: kconfiglib unavailable, using fallback autoconf.h"
     )
 endif()
 
