@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.20)
 #   ../../scripts/flash.sh --board rpi_pico --elf blinky
 
 # --- Board and toolchain: MUST come before project() ---
-set(VIBE_BOARD "rpi_pico" CACHE STRING "Target board name")
+set(VIBE_BOARD "rpi_pico2" CACHE STRING "Target board name")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/vibe_board_toolchain.cmake")
 
 project(blinky C ASM)
@@ -39,7 +39,9 @@ if(DEFINED VIBE_LINKER_SCRIPT)
     vibe_set_linker_script(blinky ${VIBE_LINKER_SCRIPT})
 endif()
 
-# Generate .bin and .hex for flashing when cross-compiling
+# Generate .bin, .hex, and .uf2 when cross-compiling
 if(CMAKE_CROSSCOMPILING)
     vibe_generate_binary(blinky)
+    vibe_generate_uf2(blinky)
+    vibe_flash_uf2(blinky)   # adds "ninja flash_uf2" convenience target
 endif()

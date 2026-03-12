@@ -12,4 +12,8 @@ set(VIBE_LINKER_SCRIPT
     "${CMAKE_CURRENT_LIST_DIR}/linker.ld"
     CACHE FILEPATH "Board linker script")
 
+# UF2 parameters for RP2350 ARM bootloader
+set(VIBE_UF2_FAMILY_ID "0xe48bff59" CACHE STRING "UF2 family ID")
+set(VIBE_UF2_FLASH_BASE "0x10000000" CACHE STRING "Flash base address")
+
 message(STATUS "Board: Raspberry Pi Pico 2 (RP2350)")

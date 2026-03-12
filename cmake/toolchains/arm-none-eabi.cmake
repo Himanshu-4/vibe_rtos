@@ -118,7 +118,10 @@ add_compile_options(${VIBE_CPU_FLAGS_LIST})
 add_compile_options(${VIBE_WARN_FLAGS})   # warnings-as-errors, compile-only
 add_link_options(${VIBE_CPU_FLAGS_LIST})
 
-# Helper to generate .bin and .hex from ELF
+# ---------------------------------------------------------------------------
+# vibe_generate_binary(TARGET)
+#   Post-build: produce TARGET.bin and TARGET.hex alongside the ELF.
+# ---------------------------------------------------------------------------
 function(vibe_generate_binary TARGET)
     add_custom_command(TARGET ${TARGET} POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
@@ -127,3 +130,8 @@ function(vibe_generate_binary TARGET)
         COMMENT "Generating ${TARGET}.bin and ${TARGET}.hex"
     )
 endfunction()
+
+# ---------------------------------------------------------------------------
+# vibe_generate_uf2 and vibe_flash_uf2 are defined in vibe_rtos.cmake
+# (loaded via find_package) so they run after application targets exist.
+# ---------------------------------------------------------------------------

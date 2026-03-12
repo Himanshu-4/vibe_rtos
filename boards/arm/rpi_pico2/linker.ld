@@ -82,7 +82,7 @@ SECTIONS
         _edata = .;
     } >RAM AT>FLASH
 
-    .bss :
+    .bss (NOLOAD) :
     {
         _sbss = .;
         *(.bss)

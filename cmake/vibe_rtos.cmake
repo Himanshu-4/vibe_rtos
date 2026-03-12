@@ -148,3 +148,74 @@ macro(vibe_set_linker_script APP_NAME SCRIPT_PATH)
         LINK_FLAGS "-T${SCRIPT_PATH} -Wl,--gc-sections"
     )
 endmacro()
+
+# -----------------------------------------------------------------------
+# vibe_generate_uf2(TARGET)
+#
+#   Post-build step: convert TARGET.bin → TARGET.uf2 for drag-and-drop
+#   flashing via the BOOTSEL bootloader.
+#
+#   Requires VIBE_UF2_FAMILY_ID and VIBE_UF2_FLASH_BASE (set by the board
+#   CMakeLists.txt, e.g. boards/arm/rpi_pico/CMakeLists.txt).
+#   vibe_generate_binary() must be called first so the .bin input exists.
+# -----------------------------------------------------------------------
+function(vibe_generate_uf2 TARGET)
+    if(NOT DEFINED VIBE_UF2_FAMILY_ID)
+        message(WARNING "vibe_generate_uf2: VIBE_UF2_FAMILY_ID not set — skipping UF2 generation")
+        return()
+    endif()
+    if(NOT DEFINED VIBE_UF2_FLASH_BASE)
+        set(VIBE_UF2_FLASH_BASE "0x10000000")
+    endif()
+
+    # Locate Python interpreter (prefer project venv)
+    if(EXISTS "${VIBE_RTOS_ROOT}/.venv/bin/python3")
+        set(_UF2_PYTHON "${VIBE_RTOS_ROOT}/.venv/bin/python3")
+    elseif(DEFINED Python3_EXECUTABLE AND Python3_EXECUTABLE)
+        set(_UF2_PYTHON "${Python3_EXECUTABLE}")
+    else()
+        find_program(_UF2_PYTHON NAMES python3 python REQUIRED)
+    endif()
+
+    set(_UF2_SCRIPT "${VIBE_RTOS_ROOT}/scripts/uf2/uf2conv.py")
+    # Use CMAKE_CURRENT_BINARY_DIR (resolved at configure time) for paths so
+    # generator expressions are not needed in BYPRODUCTS, which CMake evaluates
+    # before the build graph is fully wired.
+    set(_BIN "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.bin")
+    set(_UF2 "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.uf2")
+
+    add_custom_command(TARGET ${TARGET} POST_BUILD
+        COMMAND ${_UF2_PYTHON} ${_UF2_SCRIPT}
+            --bin    ${_BIN}
+            --out    ${_UF2}
+            --family ${VIBE_UF2_FAMILY_ID}
+            --base   ${VIBE_UF2_FLASH_BASE}
+        BYPRODUCTS ${_UF2}
+        COMMENT "Generating ${TARGET}.uf2 (family=${VIBE_UF2_FAMILY_ID}, base=${VIBE_UF2_FLASH_BASE})"
+        VERBATIM
+    )
+endfunction()
+
+# -----------------------------------------------------------------------
+# vibe_flash_uf2(TARGET)
+#
+#   Adds a "flash_uf2" convenience target: copies the UF2 file to the
+#   Pico mass-storage drive that appears when BOOTSEL is held.
+#   Drive is auto-detected: macOS → /Volumes/RPI-RP2, Linux → /media/…
+# -----------------------------------------------------------------------
+function(vibe_flash_uf2 TARGET)
+    set(_UF2 "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.uf2")
+
+    if(APPLE)
+        set(_PICO_DRIVE "/Volumes/RPI-RP2")
+    else()
+        set(_PICO_DRIVE "/media/$ENV{USER}/RPI-RP2")
+    endif()
+
+    add_custom_target(flash_uf2
+        COMMAND ${CMAKE_COMMAND} -E copy ${_UF2} ${_PICO_DRIVE}/
+        DEPENDS ${TARGET}
+        COMMENT "Flashing ${TARGET}.uf2 to ${_PICO_DRIVE} (hold BOOTSEL before connecting USB)"
+        VERBATIM
+    )
+endfunction()
