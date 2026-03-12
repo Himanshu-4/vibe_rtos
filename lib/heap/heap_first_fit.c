@@ -83,12 +83,14 @@ void vibe_heap_free(void *ptr)
 
     vibe_irq_key_t key = vibe_spinlock_lock_irqsave(&g_st.lock);
 
+#if defined(CONFIG_HEAP_CORRUPTION_CHECK)
     if (blk->magic != HEAP_MAGIC_USED) {
         /* Double-free or corruption — print and bail */
         vibe_printk("heap: bad free %p (magic=0x%x)\n", ptr, (unsigned)blk->magic);
         vibe_spinlock_unlock_irqrestore(&g_st.lock, key);
         return;
     }
+#endif
 
     g_st.used_bytes  -= blk->size;
     g_st.alloc_count--;
@@ -160,10 +162,13 @@ void vibe_heap_stats(vibe_heap_stats_t *s)
     if (s == NULL) {
         return;
     }
-
+#if defined(CONFIG_HEAP_STATS)
     vibe_irq_key_t key = vibe_spinlock_lock_irqsave(&g_st.lock);
     heap_walk_stats(&g_st, s);
     vibe_spinlock_unlock_irqrestore(&g_st.lock, key);
+#else
+    memset(s, 0, sizeof(*s));
+#endif
 }
 
 #endif /* CONFIG_HEAP_MEM && CONFIG_HEAP_ALLOCATOR_FIRST_FIT */

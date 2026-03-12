@@ -1,0 +1,6 @@
+menu "Libraries"
+
+source "lib/heap/Kconfig"
+source "lib/ring_buffer/Kconfig"
+
+endmenu

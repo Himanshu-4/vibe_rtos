@@ -485,6 +485,8 @@ void vibe_heap_stats(vibe_heap_stats_t *s)
     }
 
     memset(s, 0, sizeof(*s));
+
+#if defined(CONFIG_HEAP_STATS)
     s->total = CONFIG_HEAP_SIZE;
 
     vibe_irq_key_t key = vibe_spinlock_lock_irqsave(&g_lock);
@@ -517,6 +519,7 @@ void vibe_heap_stats(vibe_heap_stats_t *s)
     }
 
     vibe_spinlock_unlock_irqrestore(&g_lock, key);
+#endif /* CONFIG_HEAP_STATS */
 }
 
 #endif /* CONFIG_HEAP_MEM && CONFIG_HEAP_ALLOCATOR_TLSF */

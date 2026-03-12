@@ -15,6 +15,9 @@ source "drivers/Kconfig"
 # Source subsystems Kconfig
 source "subsys/Kconfig"
 
+# Source library Kconfig (heap, ring buffer)
+source "lib/Kconfig"
+
 # Top-level board/SoC selection helpers
 config BOARD
     string "Board name"

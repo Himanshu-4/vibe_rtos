@@ -1,0 +1,74 @@
+menu "Heap Allocator"
+
+config HEAP_MEM
+    bool "Enable dynamic heap memory allocator"
+    default y
+    help
+      Enables vibe_heap_alloc() / vibe_heap_free() backed by a statically
+      reserved heap region. The heap size is set by CONFIG_HEAP_SIZE.
+      Disable to eliminate the heap entirely and save RAM.
+
+config HEAP_SIZE
+    int "Heap size in bytes"
+    default 4096
+    range 256 131072
+    depends on HEAP_MEM
+    help
+      Size of the heap region in bytes. Must fit within available RAM after
+      the kernel, stack, and static data are placed.
+      Common values: 4096 (4 KB), 8192 (8 KB), 16384 (16 KB).
+
+choice HEAP_ALLOCATOR
+    prompt "Heap allocator algorithm"
+    depends on HEAP_MEM
+    default HEAP_ALLOCATOR_TLSF
+    help
+      Select the allocation algorithm used by vibe_heap_alloc() / vibe_malloc().
+
+config HEAP_ALLOCATOR_TLSF
+    bool "TLSF — Two-Level Segregated Fit (O(1) real-time)"
+    help
+      O(1) allocation and free. Uses a two-level bitmap to locate a suitable
+      free block in constant time, with no loops or searching. Best choice for
+      hard real-time systems or when allocation latency must be bounded.
+      Control structure overhead: ~700 bytes (independent of heap size).
+
+config HEAP_ALLOCATOR_BEST_FIT
+    bool "Best Fit (O(n), lowest fragmentation)"
+    help
+      Scans all free blocks and picks the smallest one that fits the request.
+      Minimises wasted space per allocation but requires a full list walk.
+      Good when fragmentation matters more than allocation latency.
+
+config HEAP_ALLOCATOR_FIRST_FIT
+    bool "First Fit (O(n), lowest overhead)"
+    help
+      Returns the first free block large enough to satisfy the request.
+      Simplest algorithm, lowest code size. Suitable for systems with
+      predictable allocation patterns or very small heaps.
+
+endchoice
+
+config HEAP_STATS
+    bool "Enable heap statistics"
+    default y
+    depends on HEAP_MEM
+    help
+      Enables vibe_heap_stats() to return live allocation metrics:
+      total/used/free bytes, largest free block, alloc/free block counts.
+      When disabled, vibe_heap_stats() fills the struct with zeros and
+      the block-chain walk is omitted, saving cycles on every query.
+
+config HEAP_CORRUPTION_CHECK
+    bool "Enable heap corruption detection"
+    default y
+    depends on HEAP_MEM
+    depends on !HEAP_ALLOCATOR_TLSF
+    help
+      Verifies magic values in block headers on every vibe_heap_free() to
+      detect double-frees and out-of-bounds writes. Adds one comparison per
+      free call and prints a diagnostic if corruption is detected.
+      Not applicable to the TLSF backend (TLSF uses its own size-flag checks).
+      Disable to remove the check on performance-critical paths.
+
+endmenu

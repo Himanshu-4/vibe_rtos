@@ -20,6 +20,12 @@ bool vibe_rb_init(vibe_rb_t *rb, void *buf, size_t size)
     rb->size = size;
     rb->head = 0U;
     rb->tail = 0U;
+#if defined(CONFIG_RING_BUFFER_STATS)
+    rb->peak_used  = 0U;
+    rb->put_count  = 0U;
+    rb->get_count  = 0U;
+    rb->drop_count = 0U;
+#endif
     return true;
 }
 
@@ -42,12 +48,22 @@ size_t vibe_rb_free(const vibe_rb_t *rb)
 
 bool vibe_rb_put(vibe_rb_t *rb, uint8_t byte)
 {
-    if (vibe_rb_is_full(rb)) { return false; }
+    if (vibe_rb_is_full(rb)) {
+#if defined(CONFIG_RING_BUFFER_STATS)
+        rb->drop_count++;
+#endif
+        return false;
+    }
 
     rb->buf[_mask(rb, rb->tail)] = byte;
     /* Memory barrier before incrementing tail so consumer sees data first */
     __atomic_signal_fence(__ATOMIC_RELEASE);
     rb->tail++;
+#if defined(CONFIG_RING_BUFFER_STATS)
+    rb->put_count++;
+    size_t used = vibe_rb_used(rb);
+    if (used > rb->peak_used) { rb->peak_used = used; }
+#endif
     return true;
 }
 
@@ -58,6 +74,9 @@ bool vibe_rb_get(vibe_rb_t *rb, uint8_t *byte)
     *byte = rb->buf[_mask(rb, rb->head)];
     __atomic_signal_fence(__ATOMIC_ACQUIRE);
     rb->head++;
+#if defined(CONFIG_RING_BUFFER_STATS)
+    rb->get_count++;
+#endif
     return true;
 }
 
@@ -82,6 +101,12 @@ size_t vibe_rb_put_buf(vibe_rb_t *rb, const void *data, size_t len)
 
     __atomic_signal_fence(__ATOMIC_RELEASE);
     rb->tail += n;
+#if defined(CONFIG_RING_BUFFER_STATS)
+    rb->put_count  += n;
+    rb->drop_count += len - n;
+    size_t used = vibe_rb_used(rb);
+    if (used > rb->peak_used) { rb->peak_used = used; }
+#endif
     return n;
 }
 
@@ -105,5 +130,30 @@ size_t vibe_rb_get_buf(vibe_rb_t *rb, void *buf, size_t len)
 
     __atomic_signal_fence(__ATOMIC_ACQUIRE);
     rb->head += n;
+#if defined(CONFIG_RING_BUFFER_STATS)
+    rb->get_count += n;
+#endif
     return n;
 }
+
+#if defined(CONFIG_RING_BUFFER_STATS)
+
+void vibe_rb_get_stats(const vibe_rb_t *rb, vibe_rb_stats_t *s)
+{
+    if (rb == NULL || s == NULL) { return; }
+    s->peak_used  = rb->peak_used;
+    s->put_count  = rb->put_count;
+    s->get_count  = rb->get_count;
+    s->drop_count = rb->drop_count;
+}
+
+void vibe_rb_reset_stats(vibe_rb_t *rb)
+{
+    if (rb == NULL) { return; }
+    rb->peak_used  = 0U;
+    rb->put_count  = 0U;
+    rb->get_count  = 0U;
+    rb->drop_count = 0U;
+}
+
+#endif /* CONFIG_RING_BUFFER_STATS */

@@ -136,6 +136,7 @@ static inline hdr_t *heap_coalesce(hdr_t *blk)
     return blk;
 }
 
+#if defined(CONFIG_HEAP_STATS)
 /** Fill vibe_heap_stats_t by walking the physical block chain. */
 static inline void heap_walk_stats(heap_state_t *st, vibe_heap_stats_t *out)
 {
@@ -159,5 +160,6 @@ static inline void heap_walk_stats(heap_state_t *st, vibe_heap_stats_t *out)
         }
     }
 }
+#endif /* CONFIG_HEAP_STATS */
 
 #endif /* HEAP_PRIV_H */

@@ -28,6 +28,12 @@ typedef struct vibe_rb {
     size_t    size;  /**< Buffer capacity — MUST be a power of 2. */
     size_t    head;  /**< Read index (consumer). */
     size_t    tail;  /**< Write index (producer). */
+#if defined(CONFIG_RING_BUFFER_STATS)
+    size_t    peak_used;    /**< Peak occupancy ever seen (bytes). */
+    size_t    put_count;    /**< Total bytes successfully written. */
+    size_t    get_count;    /**< Total bytes successfully read. */
+    size_t    drop_count;   /**< Bytes dropped because the buffer was full. */
+#endif
 } vibe_rb_t;
 
 /* -----------------------------------------------------------------------
@@ -40,15 +46,26 @@ typedef struct vibe_rb {
  * @param name  C identifier.
  * @param sz    Buffer size in bytes — must be a power of 2.
  */
-#define VIBE_RING_BUF_DEFINE(name, sz)          \
-    STATIC_ASSERT(IS_POWER_OF_TWO(sz),          \
-                  "Ring buffer size must be power of 2"); \
-    static uint8_t _##name##_buf[sz];           \
-    vibe_rb_t name = {                           \
-        .buf  = _##name##_buf,                   \
-        .size = (sz),                            \
-        .head = 0U,                              \
-        .tail = 0U,                              \
+#if defined(CONFIG_RING_BUFFER_STATS)
+#define _VIBE_RB_STATS_INIT \
+    .peak_used  = 0U,       \
+    .put_count  = 0U,       \
+    .get_count  = 0U,       \
+    .drop_count = 0U,
+#else
+#define _VIBE_RB_STATS_INIT
+#endif
+
+#define VIBE_RING_BUF_DEFINE(name, sz)                              \
+    STATIC_ASSERT(IS_POWER_OF_TWO(sz),                              \
+                  "Ring buffer size must be power of 2");           \
+    static uint8_t _##name##_buf[sz];                               \
+    vibe_rb_t name = {                                               \
+        .buf  = _##name##_buf,                                       \
+        .size = (sz),                                                \
+        .head = 0U,                                                  \
+        .tail = 0U,                                                  \
+        _VIBE_RB_STATS_INIT                                          \
     }
 
 /* -----------------------------------------------------------------------
@@ -124,6 +141,36 @@ static inline bool vibe_rb_is_full(const vibe_rb_t *rb)
 {
     return vibe_rb_used(rb) == rb->size;
 }
+
+#if defined(CONFIG_RING_BUFFER_STATS)
+
+/**
+ * Snapshot of ring buffer statistics.
+ * Populated by vibe_rb_get_stats().
+ */
+typedef struct {
+    size_t peak_used;    /**< Peak occupancy ever observed (bytes). */
+    size_t put_count;    /**< Total bytes successfully written. */
+    size_t get_count;    /**< Total bytes successfully read. */
+    size_t drop_count;   /**< Bytes dropped because the buffer was full. */
+} vibe_rb_stats_t;
+
+/**
+ * @brief Copy the current statistics out of a ring buffer.
+ *
+ * @param rb  Ring buffer to query.
+ * @param s   Output stats struct (must not be NULL).
+ */
+void vibe_rb_get_stats(const vibe_rb_t *rb, vibe_rb_stats_t *s);
+
+/**
+ * @brief Reset all statistics counters to zero.
+ *
+ * @param rb  Ring buffer to reset.
+ */
+void vibe_rb_reset_stats(vibe_rb_t *rb);
+
+#endif /* CONFIG_RING_BUFFER_STATS */
 
 #ifdef __cplusplus
 }

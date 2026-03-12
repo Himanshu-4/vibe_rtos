@@ -1,0 +1,28 @@
+menu "Ring Buffer"
+
+config RING_BUFFER
+    bool "Enable ring buffer support"
+    default y
+    help
+      Enables the SPSC (single-producer / single-consumer) lock-free ring
+      buffer (vibe_rb_t). Used by the UART driver and the shell subsystem.
+      Disable to exclude the ring buffer entirely and save flash.
+
+config RING_BUFFER_STATS
+    bool "Enable ring buffer statistics"
+    default n
+    depends on RING_BUFFER
+    help
+      Adds per-instance statistics counters to every vibe_rb_t:
+        peak_used   — peak occupancy ever observed (bytes)
+        put_count   — total bytes successfully written
+        get_count   — total bytes successfully read
+        drop_count  — bytes dropped because the buffer was full
+
+      Retrieve with vibe_rb_get_stats(rb, &s).
+      Reset with vibe_rb_reset_stats(rb).
+
+      Cost: 4 × size_t (~16 bytes) per ring buffer instance plus a few
+      counter increments on every put/get call.
+
+endmenu
