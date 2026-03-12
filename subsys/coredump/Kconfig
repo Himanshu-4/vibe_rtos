@@ -1,0 +1,28 @@
+config COREDUMP
+    bool "Coredump subsystem"
+    default n
+    help
+      Enable the VibeRTOS coredump subsystem.
+      On a fault (HardFault, MemManage, BusFault, UsageFault, assert, or
+      stack overflow) the CPU state is captured and stored in a .noinit
+      RAM region that survives a warm reset.
+      After reboot, call vibe_coredump_dump() or run the "coredump" shell
+      command to inspect the saved state.
+
+config COREDUMP_STACK_SIZE
+    int "Stack snapshot size in bytes"
+    default 128
+    range 32 512
+    depends on COREDUMP
+    help
+      Number of stack bytes captured near the fault point and stored
+      in the coredump record.  Larger values give more context but
+      consume more .noinit RAM.
+
+config COREDUMP_SHELL
+    bool "Register 'coredump' shell command"
+    default y
+    depends on COREDUMP && SHELL
+    help
+      Register the built-in "coredump" and "coredump clear" shell
+      commands so the stored coredump can be inspected interactively.

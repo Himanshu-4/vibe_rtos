@@ -92,6 +92,20 @@ SECTIONS
         _ebss = .;
     } >RAM
 
+    /* ---------------------------------------------------------------
+     * No-init region — NOT zeroed by startup code, survives warm reset.
+     * Used by the coredump subsystem to persist crash records across reboot.
+     * ------------------------------------------------------------- */
+    .noinit (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _snoinit = .;
+        *(.noinit)
+        *(.noinit.*)
+        . = ALIGN(4);
+        _enoinit = .;
+    } >RAM
+
     .heap :
     {
         __heap_start = .;

@@ -14,8 +14,13 @@ target_include_directories(vibe_subsys PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/shell
     ${CMAKE_CURRENT_SOURCE_DIR}/logging
     ${VIBE_RTOS_ROOT}/include
+    ${VIBE_RTOS_ROOT}/arch/arm/cortex_m/include
+    ${CMAKE_BINARY_DIR}/include/generated
 )
 
 target_compile_options(vibe_subsys PRIVATE
     -Wall -Wextra -Wno-unused-parameter
 )
+
+# Coredump subsystem — sources conditionally added by its own CMakeLists.txt
+add_subdirectory(coredump)

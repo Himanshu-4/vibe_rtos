@@ -1,0 +1,125 @@
+---
+# VibeRTOS — clang-format style
+# Based on LLVM with adjustments for embedded C (Linux-kernel-adjacent style).
+# Run: clang-format -i <file>
+# Check: clang-format --dry-run --Werror <file>
+
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+# --- Indentation ---
+IndentWidth:            4
+TabWidth:               4
+UseTab:                 Never
+ContinuationIndentWidth: 4
+IndentCaseLabels:       true
+IndentCaseBlocks:       false
+IndentGotoLabels:       false
+IndentPPDirectives:     AfterHash
+NamespaceIndentation:   None
+
+# --- Column limit ---
+ColumnLimit:     100
+
+# --- Braces ---
+BreakBeforeBraces: Linux
+# Linux style: function definitions get brace on new line,
+# control flow (if/for/while) get brace on same line.
+
+# --- Spaces ---
+SpaceBeforeParens:              ControlStatements
+SpaceInEmptyParentheses:        false
+SpaceAfterCStyleCast:           false
+SpaceBeforeCpp11BracedList:     false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpacesInParentheses:            false
+SpacesInSquareBrackets:         false
+SpacesInAngles:                 Never
+SpacesInCStyleCastParentheses:  false
+SpacesBeforeTrailingComments:   2
+
+# --- Alignment ---
+AlignAfterOpenBracket:          Align
+AlignConsecutiveAssignments:    Consecutive
+AlignConsecutiveDeclarations:   None
+AlignConsecutiveMacros:         Consecutive
+AlignEscapedNewlines:           Left
+AlignOperands:                  Align
+AlignTrailingComments:
+  Kind:    Always
+  OverEmptyLines: 1
+
+# --- Line breaks ---
+AllowShortBlocksOnASingleLine:          Never
+AllowShortCaseLabelsOnASingleLine:      false
+AllowShortFunctionsOnASingleLine:       None
+AllowShortIfStatementsOnASingleLine:    Never
+AllowShortLoopsOnASingleLine:           false
+AllowShortEnumsOnASingleLine:           false
+
+BreakBeforeBinaryOperators:     None
+BreakBeforeTernaryOperators:    true
+BreakStringLiterals:            false
+
+# --- Function arguments / parameters ---
+BinPackArguments:               false
+BinPackParameters:              false
+AllowAllArgumentsOnNextLine:    true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# --- Includes ---
+SortIncludes:           CaseSensitive
+IncludeBlocks:          Regroup
+IncludeCategories:
+  # 1. Generated / config header
+  - Regex:    '^"(generated/autoconf|vibe/autoconf)\.h"'
+    Priority: 1
+  # 2. VibeRTOS public headers
+  - Regex:    '^"vibe/'
+    Priority: 2
+  # 3. Arch / driver / subsystem headers
+  - Regex:    '^"(arch|drivers|subsys)/'
+    Priority: 3
+  # 4. C standard library
+  - Regex:    '^<(stdint|stdbool|stddef|stdarg|string|stdlib|stdio)\.h>'
+    Priority: 4
+  # 5. Everything else
+  - Regex:    '.*'
+    Priority: 5
+
+# --- Pointer alignment ---
+PointerAlignment:       Right
+ReferenceAlignment:     Right
+
+# --- Comments ---
+ReflowComments:         true
+CommentPragmas:         '^ IWYU pragma:'
+
+# --- Macros ---
+# Treat attribute/section macros as type-like so they don't get extra spaces.
+AttributeMacros:
+  - __attribute__
+  - __naked
+  - __used
+  - __section
+  - __aligned
+MacroBlockBegin: ''
+MacroBlockEnd:   ''
+
+# --- Penalties (tune line-break aggressiveness) ---
+PenaltyBreakAssignment:              10
+PenaltyBreakBeforeFirstCallParameter: 30
+PenaltyBreakComment:                 300
+PenaltyBreakFirstLessLess:          120
+PenaltyBreakString:                  1000
+PenaltyExcessCharacter:              1000000
+PenaltyReturnTypeOnItsOwnLine:       200
+
+# --- Misc ---
+MaxEmptyLinesToKeep:    2
+KeepEmptyLinesAtTheStartOfBlocks: false
+InsertTrailingCommas:   None
+DerivePointerAlignment: false
+DisableFormat:          false
+...

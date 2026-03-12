@@ -56,6 +56,11 @@
 /* Logging */
 #include "vibe/log.h"
 
+/* Coredump (only when subsystem is enabled) */
+#ifdef CONFIG_COREDUMP
+#include "vibe/coredump.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

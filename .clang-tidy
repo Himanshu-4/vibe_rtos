@@ -1,0 +1,90 @@
+# VibeRTOS — clang-tidy configuration
+#
+# Run on a single file:
+#   clang-tidy <file> -- -I include -I arch/arm/cortex_m/include \
+#       -I build/include/generated -mcpu=cortex-m0plus -mthumb
+#
+# Run on the whole project (requires compile_commands.json):
+#   cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ...
+#   clang-tidy $(find . -name '*.c' -not -path '*/build/*')
+
+# ---------------------------------------------------------------------------
+# Enabled check groups
+# ---------------------------------------------------------------------------
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  -cert-dcl03-c,
+  -cert-err34-c,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  misc-*,
+  -misc-unused-parameters,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-isolate-declaration
+
+# ---------------------------------------------------------------------------
+# Treat these checks as errors (CI should fail on them)
+# ---------------------------------------------------------------------------
+WarningsAsErrors: >
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  clang-analyzer-core.NullDereference,
+  clang-analyzer-core.DivideZero,
+  clang-analyzer-core.uninitialized.Assign,
+  clang-analyzer-security.FloatLoopCounter,
+  cert-exp33-c
+
+# ---------------------------------------------------------------------------
+# Header filter — only lint headers inside the project, not system/toolchain
+# ---------------------------------------------------------------------------
+HeaderFilterRegex: '^.*(include/vibe|subsys|kernel|arch|drivers)/.*\.h$'
+
+# ---------------------------------------------------------------------------
+# Check-specific options
+# ---------------------------------------------------------------------------
+CheckOptions:
+  # readability — naming conventions (snake_case for C)
+  - key:   readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key:   readability-identifier-naming.VariableCase
+    value: lower_case
+  - key:   readability-identifier-naming.GlobalVariablePrefix
+    value: g_
+  - key:   readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key:   readability-identifier-naming.TypedefCase
+    value: lower_case
+  - key:   readability-identifier-naming.TypedefSuffix
+    value: _t
+  - key:   readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key:   readability-identifier-naming.StructCase
+    value: lower_case
+
+  # readability — braces
+  - key:   readability-braces-around-statements.ShortStatementLines
+    value: '0'
+
+  # misc — limit size of includes
+  - key:   misc-include-cleaner.IgnoreHeaders
+    value: 'vibe/kernel.h;vibe/arch.h'
+
+  # bugprone — assert macro side effects
+  - key:   bugprone-assert-side-effect.AssertMacros
+    value: 'VIBE_ASSERT,assert'
+
+  # cert — integer overflow: allow known-safe unsigned wrap in embedded code
+  - key:   cert-int09-c.DiagnoseSignedUnsignedConversion
+    value: '1'
+
+  # performance — avoid passing large structs by value
+  - key:   performance-unnecessary-value-param.AllowedTypes
+    value: ''

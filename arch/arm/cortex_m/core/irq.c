@@ -359,3 +359,35 @@ void vibe_default_fault_handler(const char *fault_name)
     arch_breakpoint();
     for (;;) {}
 }
+
+/* -----------------------------------------------------------------------
+ * Weak fault handler stubs
+ *
+ * These are the default (non-coredump) fault handlers.  When
+ * CONFIG_COREDUMP=y the strong definitions in coredump_arch_arm.c
+ * override these at link time, giving full register capture + dump.
+ * --------------------------------------------------------------------- */
+
+__attribute__((weak))
+void HardFault_Handler(void)
+{
+    vibe_default_fault_handler("HardFault");
+}
+
+__attribute__((weak))
+void MemManage_Handler(void)
+{
+    vibe_default_fault_handler("MemManage");
+}
+
+__attribute__((weak))
+void BusFault_Handler(void)
+{
+    vibe_default_fault_handler("BusFault");
+}
+
+__attribute__((weak))
+void UsageFault_Handler(void)
+{
+    vibe_default_fault_handler("UsageFault");
+}
