@@ -68,12 +68,13 @@ macro(vibe_add_application APP_NAME)
     # is compiled.  kconfig_gen is an ALL target that fires gen_configs.py
     # whenever sdkconfig is newer than autoconf.h / sdkconfig.cmake.
     if(TARGET kconfig_gen)
-        add_dependencies(vibe_lib     kconfig_gen)
-        add_dependencies(vibe_kernel  kconfig_gen)
-        add_dependencies(vibe_arch    kconfig_gen)
-        add_dependencies(vibe_drivers kconfig_gen)
-        add_dependencies(vibe_subsys  kconfig_gen)
-        add_dependencies(vibe_heap    kconfig_gen)
+        add_dependencies(vibe_lib           kconfig_gen)
+        add_dependencies(vibe_kernel        kconfig_gen)
+        add_dependencies(vibe_arch          kconfig_gen)
+        add_dependencies(vibe_drivers       kconfig_gen)
+        add_dependencies(vibe_subsys        kconfig_gen)
+        add_dependencies(vibe_heap          kconfig_gen)
+        add_dependencies(vibe_job_scheduler kconfig_gen)
     endif()
 
     # Create the executable target
@@ -97,6 +98,7 @@ macro(vibe_add_application APP_NAME)
         vibe_heap
         vibe_lib
         vibe_ring_buffer
+        vibe_job_scheduler
         -Wl,--end-group
     )
 

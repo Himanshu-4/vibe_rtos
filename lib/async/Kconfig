@@ -1,0 +1,18 @@
+menu "Async / Coroutines"
+
+config ASYNC
+    bool "Enable stackless coroutine (async/await) support"
+    default y
+    help
+      Provides ASYNC_BEGIN / ASYNC_END / ASYNC_YIELD / ASYNC_AWAIT /
+      ASYNC_AWAIT_CORO macros for writing stackless cooperative coroutines
+      in C.
+
+      Each coroutine is a plain C function that stores its resume point in
+      a small async_t struct — no extra stack is required.  Persistent state
+      must live in a caller-supplied context struct.
+
+      Required by the job scheduler (CONFIG_JOB_SCHEDULER).  Can also be
+      used directly in application code without the scheduler.
+
+endmenu

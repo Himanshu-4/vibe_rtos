@@ -2,5 +2,7 @@ menu "Libraries"
 
 source "lib/heap/Kconfig"
 source "lib/ring_buffer/Kconfig"
+source "lib/async/Kconfig"
+source "lib/job_scheduler/Kconfig"
 
 endmenu

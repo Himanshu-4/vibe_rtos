@@ -1,0 +1,50 @@
+menu "Job Scheduler"
+
+config JOB_SCHEDULER
+    bool "Enable cooperative job scheduler"
+    default y
+    depends on ASYNC
+    help
+      A lightweight cooperative scheduler that multiplexes multiple async
+      coroutines inside a single RTOS task.
+
+      Each job is a coroutine (async_fn_t) that yields cooperatively via
+      ASYNC_YIELD / ASYNC_AWAIT.  On every vibe_sched_run() call:
+
+        1. All READY jobs run once in descending priority order.
+        2. All BLOCKED jobs are re-probed (their ASYNC_AWAIT condition
+           is re-evaluated).
+
+      Completed jobs (ASYNC_DONE) are freed back to the pool automatically.
+      Use vibe_sched_is_idle() to decide when to yield the RTOS task.
+
+config JOB_SCHEDULER_MAX_JOBS
+    int "Maximum number of concurrent jobs per scheduler"
+    default 8
+    range 1 64
+    depends on JOB_SCHEDULER
+    help
+      Static pool size for job slots.  Each vibe_job_sched_t instance
+      allocates this many vibe_job_t entries.  Jobs submitted when the
+      pool is full are rejected (vibe_sched_submit returns NULL).
+
+      Size of one vibe_job_t (with stats disabled):
+        arm-none-eabi -O2:  ~24 bytes per slot
+      Total pool:           MAX_JOBS × ~24 bytes in BSS/data.
+
+config JOB_SCHEDULER_STATS
+    bool "Enable job scheduler statistics"
+    default n
+    depends on JOB_SCHEDULER
+    help
+      Adds aggregate counters to every vibe_job_sched_t:
+        submitted  — total jobs ever submitted
+        completed  — total jobs that returned ASYNC_DONE
+        active     — currently occupied (non-idle) slots
+        ticks      — total vibe_sched_run() calls
+
+      Also adds a per-job run_count field (times each job was resumed).
+      Retrieve with vibe_sched_get_stats(sched, &stats).
+      Adds ~16 bytes overhead per scheduler instance.
+
+endmenu
