@@ -161,24 +161,33 @@ def _c_expr_to_py(expr: str) -> str:
     return expr
 
 
-# Matches the innermost (no nested parens) numeric ternary: (cond ? true : false)
-_TERNARY_NUM = re.compile(
-    r'\(\s*(-?\d+)\s*\?\s*(-?\d+(?:\.\d+)?)\s*:\s*(-?\d+(?:\.\d+)?)\s*\)'
-)
+# Matches the innermost ternary where none of condition/true/false contain
+# parens or the ternary operators themselves.  Works innermost-first so
+# nested ternaries are resolved in multiple passes.
+_TERNARY_INNER = re.compile(r'\(([^()?:]+)\?\s*([^()?:]+)\s*:\s*([^()?:]+)\)')
+
 
 def _eval_ternaries(expr: str) -> str:
-    """Evaluate fully-numeric innermost ternaries iteratively.
+    """Evaluate C ternary operators innermost-first, iteratively.
 
-    (1 ? 32 : 0) → 32
-    Handles nesting by repeated innermost-first evaluation.
+    Handles both literal conditions (1 ? 32 : 0) and expression conditions
+    (5 >= 5 ? 0xFF : 0x0F) by using Python eval on the condition part.
+    Nested ternaries are resolved via repeated passes.
     """
     prev = None
     while expr != prev:
         prev = expr
+
         def _repl(m: re.Match) -> str:
-            cond, t, f = m.group(1), m.group(2), m.group(3)
-            return t if int(cond) != 0 else f
-        expr = _TERNARY_NUM.sub(_repl, expr)
+            cond_s = m.group(1).strip()
+            t, f   = m.group(2).strip(), m.group(3).strip()
+            try:
+                cond_val = eval(cond_s, {"__builtins__": {}}, {})  # noqa: S307
+                return t if cond_val else f
+            except Exception:
+                return m.group(0)  # cannot evaluate yet, leave unchanged
+
+        expr = _TERNARY_INNER.sub(_repl, expr)
     return expr
 
 
@@ -430,10 +439,17 @@ class HeaderParser:
         )
         self.macros.append(entry)
 
-        # Register in live symbol table with raw string so later conditions
-        # can substitute it; the Evaluator will resolve actual values.
-        if name not in self._symbols:
-            self._symbols[name] = value if value else 1
+        # Always update live symbol table — last definition wins, matching
+        # C preprocessor semantics.  Warn when a macro is redefined.
+        new_val = value if value else 1
+        if name in self._symbols and str(self._symbols[name]) != str(new_val):
+            self.log.warn(
+                f"Redefine: {_bold(name)}  "
+                f"{_dim(repr(str(self._symbols[name])))} → "
+                f"{_cyan(repr(str(new_val)))}  "
+                f"({os.path.basename(source)}:{lineno})"
+            )
+        self._symbols[name] = new_val
 
         self.log.define(name, value, macro_type.value, scope.value)
 
@@ -554,7 +570,8 @@ class Evaluator:
 
         try:
             result  = eval(py_expr, {"__builtins__": {}}, {})  # noqa: S307
-            comment = f"{expr} → {result}"
+            display = int(result) if isinstance(result, bool) else result
+            comment = f"{expr} → {display}"
             return result, comment
         except Exception:
             pass
@@ -568,7 +585,8 @@ class Evaluator:
         partial_py = _c_expr_to_py(partial_c)
         try:
             result  = eval(partial_py, {"__builtins__": {}}, {})  # noqa: S307
-            comment = f"{expr} ~→ {result} (partial)"
+            display = int(result) if isinstance(result, bool) else result
+            comment = f"{expr} ~→ {display} (partial)"
             return result, comment
         except Exception:
             return None, f"{expr} (unresolved)"
@@ -630,11 +648,28 @@ def write_header(
     ]
 
     # ── Environment block ─────────────────────────────────────────────────────
+    # Find env macros that were later overridden by a header define — those
+    # will appear in the per-file block with the final value, so suppress the
+    # #define here and add an override note instead.
+    overridden_env = {m.name for m in macros if m.type != MacroType.ENV} & set(env)
+
     if env:
         lines.append("/* ── Environment / compiler defines " + "─" * 43 + " */")
         for name, val in env.items():
-            lines.append(f"/* -D{name}={val} */")
-            lines.append(f"#define {name:<44} {val}")
+            if name in overridden_env:
+                # Find the overriding entry to name the source
+                over_m = next((m for m in reversed(macros)
+                               if m.name == name and m.type != MacroType.ENV), None)
+                src = (f"{os.path.basename(over_m.source_file)}:{over_m.line_no}"
+                       if over_m else "header")
+                lines.append(
+                    f"/* -D{name}={val}  →  overridden to"
+                    f" {_val_to_str(over_m.evaluated_value, str(val)) if over_m else '?'}"
+                    f" by {src} */"
+                )
+            else:
+                lines.append(f"/* -D{name}={val} */")
+                lines.append(f"#define {name:<44} {val}")
         lines.append("")
 
     # ── Per-file blocks ───────────────────────────────────────────────────────
@@ -694,15 +729,22 @@ def _build_argparser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 examples:
-  # All wireless features enabled
-  %(prog)s -i test/base.h -D TECH_BT=1 -D TECH_BLE=1 -p test/ -o out.h
+  # Feature-flag syntax (INCLUDE_FEATURE=1, NOT_INCLUDE_FEATURE=0)
+  %(prog)s -i test/base.h -p test/ \\
+      TECH_BT=INCLUDE_FEATURE TECH_BLE=INCLUDE_FEATURE \\
+      TECH_AUDIO=NOT_INCLUDE_FEATURE TECH_PARAM=NOT_INCLUDE_FEATURE
 
-  # Full featured, custom BT version
-  %(prog)s -i test/base.h -D TECH_BT -D TECH_BLE -D TECH_AUDIO -D TECH_PARAM \\
-           -D BT_VER=6 -p test/ -o out.h --verbose
+  # Mix feature flags with raw values and options
+  %(prog)s -i test/base.h -p test/ -o out.h -t rp2040 --json \\
+      TECH_BT=INCLUDE_FEATURE TECH_BLE=INCLUDE_FEATURE \\
+      TECH_AUDIO=INCLUDE_FEATURE TECH_PARAM=INCLUDE_FEATURE BT_VER=6
+
+  # Classic -D style still works
+  %(prog)s -i test/base.h -D TECH_BT=1 -D TECH_BLE=1 -p test/ --verbose
 
   # BLE only, JSON dump
-  %(prog)s -i test/base.h -D TECH_BLE=1 -p test/ --json --target rp2350
+  %(prog)s -i test/base.h -p test/ --json --target rp2350 \\
+      TECH_BLE=INCLUDE_FEATURE
 """,
     )
     p.add_argument(
@@ -738,21 +780,37 @@ examples:
         "--verbose", "-v", action="store_true",
         help="Enable verbose/debug output",
     )
+    p.add_argument(
+        "features", nargs="*",
+        metavar="NAME=INCLUDE_FEATURE|NOT_INCLUDE_FEATURE",
+        help=(
+            "Feature flags: NAME=INCLUDE_FEATURE (→ NAME=1) or "
+            "NAME=NOT_INCLUDE_FEATURE (→ NAME=0). "
+            "Raw values also accepted: BT_VER=6."
+        ),
+    )
     return p
 
 
 def _parse_env_defs(raw: list[str], log: Logger) -> dict[str, Any]:
-    """Parse ['-DTECH_BT', 'TECH_BLE=1', 'BT_VER=6'] → {'TECH_BT': 1, ...}"""
+    """Parse ['-DTECH_BT', 'TECH_BLE=1', 'BT_VER=6'] → {'TECH_BT': 1, ...}
+    ['TECH_BT=NOT_INCLUDE_FEATURE', 'TECH_BLE=INCLUDE_FEATURE', 'BT_VER=6'] → {'TECH_BT': 0, TECH_BLE: 1, BT_VER: 6}
+    """
     env: dict[str, Any] = {}
     for token in raw:
         # Strip leading -D or -d
         token = re.sub(r"^-[Dd]", "", token).strip()
         if "=" in token:
             name, _, raw_val = token.partition("=")
-            try:
-                val: Any = int(raw_val, 0)
-            except ValueError:
-                val = raw_val
+            if raw_val == "INCLUDE_FEATURE":
+                val: Any = 1
+            elif raw_val == "NOT_INCLUDE_FEATURE":
+                val = 0
+            else:
+                try:
+                    val = int(raw_val, 0)
+                except ValueError:
+                    val = raw_val
         else:
             name, val = token, 1
         if not name:
@@ -777,10 +835,24 @@ def main() -> int:
     if args.target:
         log.info(f"Target: {_cyan(args.target)}")
 
-    # ── Env defines ───────────────────────────────────────────────────────────
-    env = _parse_env_defs(args.env, log)
+    # ── Env defines + positional feature flags ────────────────────────────────
+    # Merge -D / --env tokens with positional NAME=INCLUDE/NOT_INCLUDE tokens.
+    all_raw = args.env + (args.features or [])
+    env = _parse_env_defs(all_raw, log)
+
+    # Feature-flag summary (INCLUDE_FEATURE / NOT_INCLUDE_FEATURE tokens only)
+    included = [t.partition("=")[0] for t in (args.features or [])
+                if t.endswith("=INCLUDE_FEATURE")]
+    excluded = [t.partition("=")[0] for t in (args.features or [])
+                if t.endswith("=NOT_INCLUDE_FEATURE")]
+    if included:
+        log.info(f"Features ON:  {' '.join(_cyan(n) for n in included)}")
+    if excluded:
+        log.info(f"Features OFF: {' '.join(_yellow(n) for n in excluded)}")
     if env:
-        active = ", ".join(_cyan(k) for k in env)
+        active = ", ".join(
+            f"{_cyan(k)}={_dim(str(v))}" for k, v in env.items()
+        )
         log.info(f"Active defines: {active}")
 
     # ── Resolve input file ────────────────────────────────────────────────────
@@ -834,16 +906,24 @@ def main() -> int:
             + ", ".join(_yellow(m.name) for m in unresolved)
         )
 
+    # ── Deduplicate: last definition of each name wins (C preprocessor) ───────
+    # Keep all macros for evaluation context but only emit the final definition.
+    last_idx: dict[str, int] = {m.name: i for i, m in enumerate(all_macros)}
+    output_macros = [m for i, m in enumerate(all_macros) if last_idx[m.name] == i]
+    dupes = len(all_macros) - len(output_macros)
+    if dupes:
+        log.info(f"Deduplicated {_cyan(str(dupes))} redefined macro(s) — keeping last definition")
+
     # ── Write output ──────────────────────────────────────────────────────────
     out_path = (
         Path(args.output)
         if args.output
         else input_path.parent / "features_generated.h"
     )
-    write_header(all_macros, env, out_path, log)
+    write_header(output_macros, env, out_path, log)
 
     if args.json:
-        write_json(all_macros, out_path.with_suffix(".json"), log)
+        write_json(output_macros, out_path.with_suffix(".json"), log)
 
     log.summary()
     log.info(_green("Done."))
