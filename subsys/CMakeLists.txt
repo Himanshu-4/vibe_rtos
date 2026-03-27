@@ -1,13 +1,30 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Subsystem sources — always compiled; individual files guard features with
-# weak symbols so the binary links even when CONFIG_* is not set.
-set(SUBSYS_SOURCES
-    logging/log.c
-    shell/shell.c
-)
+set(_SUBSYS_SRCS "")
 
-add_library(vibe_subsys STATIC ${SUBSYS_SOURCES})
+if(CONFIG_LOG)
+    list(APPEND _SUBSYS_SRCS logging/log.c)
+endif()
+
+if(CONFIG_SHELL)
+    list(APPEND _SUBSYS_SRCS shell/shell.c)
+endif()
+
+if(CONFIG_COREDUMP)
+    list(APPEND _SUBSYS_SRCS
+        coredump/coredump.c
+        coredump/coredump_arch_arm.c
+    )
+    if(CONFIG_COREDUMP_SHELL)
+        list(APPEND _SUBSYS_SRCS coredump/coredump_shell.c)
+    endif()
+endif()
+
+if(NOT _SUBSYS_SRCS)
+    return()
+endif()
+
+add_library(vibe_subsys STATIC ${_SUBSYS_SRCS})
 
 target_include_directories(vibe_subsys PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -17,8 +34,3 @@ target_include_directories(vibe_subsys PUBLIC
     ${VIBE_RTOS_ROOT}/arch/arm/cortex_m/include
     ${CMAKE_BINARY_DIR}/include/generated
 )
-
-# Warning flags are set globally by the toolchain file.
-
-# Coredump subsystem — sources conditionally added by its own CMakeLists.txt
-add_subdirectory(coredump)

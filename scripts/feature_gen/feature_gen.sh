@@ -19,6 +19,11 @@ INCLUDE_PATH="${SCRIPT_DIR}/test"
 # ── Target board ──────────────────────────────────────────────────────────────
 TARGET="rp2040"          # rp2040 | rp2350
 
+# ── Pre-include: injected before base.h, mimics compiler -include ─────────────
+# Point to the generated autoconf.h from your build directory, or leave "" to skip.
+# Example: AUTOCONF="${SCRIPT_DIR}/../../samples/blinky/build/include/generated/autoconf.h"
+AUTOCONF=""
+
 # ── Feature flags (INCLUDE_FEATURE=1 / NOT_INCLUDE_FEATURE=0) ────────────────
 TECH_BT="INCLUDE_FEATURE"
 TECH_BLE="INCLUDE_FEATURE"
@@ -51,7 +56,8 @@ ARGS=(
     "TECH_PARAM=${TECH_PARAM}"
 )
 
-[[ -n "${BT_VER}" ]]  && ARGS+=("BT_VER=${BT_VER}")
+[[ -n "${BT_VER}" ]]     && ARGS+=("BT_VER=${BT_VER}")
+[[ -n "${AUTOCONF}" ]]   && ARGS+=(--pre-include "${AUTOCONF}")
 [[ "${JSON}"    == true ]] && ARGS+=(--json)
 [[ "${VERBOSE}" == true ]] && ARGS+=(--verbose)
 

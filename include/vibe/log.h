@@ -47,17 +47,13 @@ typedef struct vibe_log_module {
 } vibe_log_module_t;
 
 /* -----------------------------------------------------------------------
- * Module registration macro
+ * When CONFIG_LOG is enabled: full API.
+ * When CONFIG_LOG is disabled: all macros and init functions compile away
+ * to nothing so callers (kernel, drivers) need no #ifdef guards.
  * --------------------------------------------------------------------- */
 
-/**
- * VIBE_LOG_MODULE_REGISTER — register a log module for this translation unit.
- *
- * Must be placed at file scope, outside any function.
- *
- * @param mod_name   Identifier for the module (also used as string).
- * @param init_level Initial log level (vibe_log_level_t).
- */
+#ifdef CONFIG_LOG
+
 #define VIBE_LOG_MODULE_REGISTER(mod_name, init_level)                    \
     static vibe_log_module_t _log_module_##mod_name                        \
         __attribute__((used, section("._vibe_log_modules"))) = {           \
@@ -66,10 +62,6 @@ typedef struct vibe_log_module {
     };                                                                     \
     static vibe_log_module_t *const _log_mod = &_log_module_##mod_name
 
-/* -----------------------------------------------------------------------
- * Internal log emit function (do not call directly)
- * --------------------------------------------------------------------- */
-
 void _vibe_log_emit(vibe_log_module_t *mod,
                     vibe_log_level_t   level,
                     const char        *file,
@@ -77,76 +69,40 @@ void _vibe_log_emit(vibe_log_module_t *mod,
                     const char        *fmt,
                     ...) __attribute__((format(printf, 5, 6)));
 
-/* -----------------------------------------------------------------------
- * Logging macros
- * --------------------------------------------------------------------- */
-
 #ifndef CONFIG_LOG_DEFAULT_LEVEL
 #define CONFIG_LOG_DEFAULT_LEVEL VIBE_LOG_LEVEL_INF
 #endif
 
-/**
- * Log an error message (always compiled in unless CONFIG_LOG is off).
- */
 #define VIBE_LOG_ERR(fmt, ...) \
     _vibe_log_emit(_log_mod, VIBE_LOG_LEVEL_ERR, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-
-/**
- * Log a warning message.
- */
 #define VIBE_LOG_WRN(fmt, ...) \
     _vibe_log_emit(_log_mod, VIBE_LOG_LEVEL_WRN, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-
-/**
- * Log an informational message.
- */
 #define VIBE_LOG_INF(fmt, ...) \
     _vibe_log_emit(_log_mod, VIBE_LOG_LEVEL_INF, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-
-/**
- * Log a debug message.
- */
 #define VIBE_LOG_DBG(fmt, ...) \
     _vibe_log_emit(_log_mod, VIBE_LOG_LEVEL_DBG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
-/* -----------------------------------------------------------------------
- * Runtime level control
- * --------------------------------------------------------------------- */
-
-/**
- * @brief Change the log level for a named module at runtime.
- *
- * @param module_name  Module name string (as given to VIBE_LOG_MODULE_REGISTER).
- * @param level        New log level.
- * @return             VIBE_OK, or VIBE_ENODEV if module not found.
- */
-vibe_err_t vibe_log_set_level(const char *module_name, vibe_log_level_t level);
-
-/**
- * @brief Get the current log level for a named module.
- *
- * @param module_name  Module name.
- * @return             Current level, or VIBE_LOG_LEVEL_NONE if not found.
- */
+vibe_err_t       vibe_log_set_level(const char *module_name, vibe_log_level_t level);
 vibe_log_level_t vibe_log_get_level(const char *module_name);
+void             vibe_log_flush(void);
+void             _vibe_log_init(void);
 
-/**
- * @brief Flush any buffered/deferred log messages to the backend.
- *
- * A no-op when CONFIG_LOG_DEFERRED is not enabled.
- */
-void vibe_log_flush(void);
+#else /* CONFIG_LOG disabled — compile everything away */
 
-/* -----------------------------------------------------------------------
- * Backend initialisation (called by kernel init)
- * --------------------------------------------------------------------- */
+#define VIBE_LOG_MODULE_REGISTER(mod_name, init_level)  /* disabled */
+#define VIBE_LOG_ERR(fmt, ...)   do {} while (0)
+#define VIBE_LOG_WRN(fmt, ...)   do {} while (0)
+#define VIBE_LOG_INF(fmt, ...)   do {} while (0)
+#define VIBE_LOG_DBG(fmt, ...)   do {} while (0)
 
-/**
- * @brief Initialise the logging subsystem and registered backends.
- *
- * Called from vibe_init() after the UART/RTT drivers are ready.
- */
-void _vibe_log_init(void);
+static inline void             _vibe_log_init(void) {}
+static inline void             vibe_log_flush(void) {}
+static inline vibe_log_level_t vibe_log_get_level(const char *n)
+    { (void)n; return VIBE_LOG_LEVEL_NONE; }
+static inline vibe_err_t       vibe_log_set_level(const char *n, vibe_log_level_t l)
+    { (void)n; (void)l; return 0; }
+
+#endif /* CONFIG_LOG */
 
 #ifdef __cplusplus
 }

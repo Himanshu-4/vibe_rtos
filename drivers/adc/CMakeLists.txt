@@ -1,3 +1,4 @@
 if(CONFIG_ADC)
-    target_sources(vibe_drivers PRIVATE adc.c)
+    list(APPEND _DRIVER_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/adc.c)
+    set(_DRIVER_SRCS ${_DRIVER_SRCS} PARENT_SCOPE)
 endif()

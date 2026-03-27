@@ -26,6 +26,13 @@
 
 #define VIBE_RTOS_VERSION_STRING "0.1.0"
 
+/* Kconfig-generated CONFIG_* definitions (force-included by CMake too) */
+#ifdef __has_include
+#  if __has_include(<autoconf.h>)
+#    include <autoconf.h>
+#  endif
+#endif
+
 /* Core types and utilities */
 #include "vibe/types.h"
 #include "vibe/sys/util.h"

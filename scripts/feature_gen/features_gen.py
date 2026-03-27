@@ -765,6 +765,11 @@ examples:
         help="Additional include search path (same as --path)",
     )
     p.add_argument(
+        "--pre-include", metavar="FILE", action="append", default=[],
+        dest="pre_include",
+        help="File to parse before --input (mimics compiler -include); repeatable",
+    )
+    p.add_argument(
         "--output", "-o", metavar="FILE", default=None,
         help="Output .h file (default: features_generated.h next to input)",
     )
@@ -882,6 +887,22 @@ def main() -> int:
             source_file="<env>", line_no=0,
             evaluated_value=val, comment=f"-D{name}={val}",
         ))
+
+    # ── Pre-include files (mimics compiler -include flag) ─────────────────────
+    for pi in args.pre_include:
+        pi_path = Path(pi).resolve()
+        if not pi_path.exists():
+            # Try resolving against include paths
+            for inc in include_paths:
+                candidate = inc / pi
+                if candidate.exists():
+                    pi_path = candidate
+                    break
+            else:
+                log.warn(f"--pre-include file not found: {pi}")
+                continue
+        log.info(f"Pre-including: {_cyan(str(pi_path))}")
+        hparser.parse_file(pi_path)
 
     hparser.parse_file(input_path)
 

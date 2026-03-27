@@ -47,7 +47,9 @@ set(VIBE_SOC_DIR      ${VIBE_RTOS_ROOT}/soc)
 # -----------------------------------------------------------------------
 macro(vibe_add_application APP_NAME)
     # Build VibeRTOS libraries as part of this application build.
-    # Guards ensure each subdirectory is only added once.
+    # Always-present targets (lib, kernel, arch) are guarded by TARGET checks.
+    # Optional targets (drivers, subsys) may not be created if their CONFIG is
+    # disabled, so we use a CACHE variable to prevent duplicate add_subdirectory.
     if(NOT TARGET vibe_lib)
         add_subdirectory(${VIBE_RTOS_ROOT}/lib     ${CMAKE_BINARY_DIR}/_vibe/lib)
     endif()
@@ -57,10 +59,14 @@ macro(vibe_add_application APP_NAME)
     if(NOT TARGET vibe_arch)
         add_subdirectory(${VIBE_RTOS_ROOT}/arch    ${CMAKE_BINARY_DIR}/_vibe/arch)
     endif()
-    if(NOT TARGET vibe_drivers)
+    get_property(_DRIVERS_DIR_ADDED GLOBAL PROPERTY _VIBE_DRIVERS_DIR_ADDED)
+    if(NOT _DRIVERS_DIR_ADDED)
+        set_property(GLOBAL PROPERTY _VIBE_DRIVERS_DIR_ADDED TRUE)
         add_subdirectory(${VIBE_RTOS_ROOT}/drivers ${CMAKE_BINARY_DIR}/_vibe/drivers)
     endif()
-    if(NOT TARGET vibe_subsys)
+    get_property(_SUBSYS_DIR_ADDED GLOBAL PROPERTY _VIBE_SUBSYS_DIR_ADDED)
+    if(NOT _SUBSYS_DIR_ADDED)
+        set_property(GLOBAL PROPERTY _VIBE_SUBSYS_DIR_ADDED TRUE)
         add_subdirectory(${VIBE_RTOS_ROOT}/subsys  ${CMAKE_BINARY_DIR}/_vibe/subsys)
     endif()
 
@@ -68,13 +74,15 @@ macro(vibe_add_application APP_NAME)
     # is compiled.  kconfig_gen is an ALL target that fires gen_configs.py
     # whenever sdkconfig is newer than autoconf.h / sdkconfig.cmake.
     if(TARGET kconfig_gen)
-        add_dependencies(vibe_lib           kconfig_gen)
-        add_dependencies(vibe_kernel        kconfig_gen)
-        add_dependencies(vibe_arch          kconfig_gen)
-        add_dependencies(vibe_drivers       kconfig_gen)
-        add_dependencies(vibe_subsys        kconfig_gen)
-        add_dependencies(vibe_heap          kconfig_gen)
-        add_dependencies(vibe_job_scheduler kconfig_gen)
+        add_dependencies(vibe_lib    kconfig_gen)
+        add_dependencies(vibe_kernel kconfig_gen)
+        add_dependencies(vibe_arch   kconfig_gen)
+        foreach(_DEP_TARGET vibe_heap vibe_ring_buffer vibe_job_scheduler
+                            vibe_subsys vibe_drivers)
+            if(TARGET ${_DEP_TARGET})
+                add_dependencies(${_DEP_TARGET} kconfig_gen)
+            endif()
+        endforeach()
     endif()
 
     # Create the executable target
@@ -86,19 +94,20 @@ macro(vibe_add_application APP_NAME)
         ${CMAKE_BINARY_DIR}/include/generated
     )
 
-    # Link all VibeRTOS static libraries inside a group so the linker makes
-    # multiple passes to resolve cross-library circular references
-    # (e.g. vibe_heap → spinlock in vibe_kernel → heap in vibe_heap).
+    # Link kernel + arch always; link optional libraries only if their target
+    # was created (i.e. their CONFIG was enabled).  All go inside --start-group
+    # so the linker makes multiple passes for any circular references.
+    set(_VIBE_LINK_LIBS vibe_kernel vibe_arch vibe_lib)
+    foreach(_OPT_LIB vibe_heap vibe_ring_buffer vibe_job_scheduler
+                     vibe_subsys vibe_drivers)
+        if(TARGET ${_OPT_LIB})
+            list(APPEND _VIBE_LINK_LIBS ${_OPT_LIB})
+        endif()
+    endforeach()
+
     target_link_libraries(${APP_NAME} PRIVATE
         -Wl,--start-group
-        vibe_kernel
-        vibe_arch
-        vibe_subsys
-        vibe_drivers
-        vibe_heap
-        vibe_lib
-        vibe_ring_buffer
-        vibe_job_scheduler
+        ${_VIBE_LINK_LIBS}
         -Wl,--end-group
     )
 

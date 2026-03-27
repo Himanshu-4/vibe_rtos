@@ -1,3 +1,4 @@
 if(CONFIG_TIMER_HW)
-    target_sources(vibe_drivers PRIVATE timer.c)
+    list(APPEND _DRIVER_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/timer.c)
+    set(_DRIVER_SRCS ${_DRIVER_SRCS} PARENT_SCOPE)
 endif()

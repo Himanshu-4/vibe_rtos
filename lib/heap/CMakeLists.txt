@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+if(NOT CONFIG_HEAP_MEM)
+    return()
+endif()
+
 add_library(vibe_heap STATIC)
 
 target_include_directories(vibe_heap PUBLIC
@@ -9,18 +13,10 @@ target_include_directories(vibe_heap PUBLIC
     ${CMAKE_BINARY_DIR}/include/generated
 )
 
-# Warning flags are set globally by the toolchain file.
-
-if(CONFIG_HEAP_MEM)
-    if(CONFIG_HEAP_ALLOCATOR_TLSF)
-        target_sources(vibe_heap PRIVATE heap_tlsf.c)
-    elseif(CONFIG_HEAP_ALLOCATOR_BEST_FIT)
-        target_sources(vibe_heap PRIVATE heap_best_fit.c)
-    else()
-        # Default / FIRST_FIT
-        target_sources(vibe_heap PRIVATE heap_first_fit.c)
-    endif()
+if(CONFIG_HEAP_ALLOCATOR_TLSF)
+    target_sources(vibe_heap PRIVATE heap_tlsf.c)
+elseif(CONFIG_HEAP_ALLOCATOR_BEST_FIT)
+    target_sources(vibe_heap PRIVATE heap_best_fit.c)
 else()
-    # Heap disabled — empty library so targets that link it still build
-    target_sources(vibe_heap PRIVATE heap_stub.c)
+    target_sources(vibe_heap PRIVATE heap_first_fit.c)
 endif()

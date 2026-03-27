@@ -11,4 +11,6 @@ target_include_directories(vibe_lib INTERFACE
     ${VIBE_RTOS_ROOT}/include
 )
 
-target_link_libraries(vibe_lib INTERFACE vibe_ring_buffer)
+if(TARGET vibe_ring_buffer)
+    target_link_libraries(vibe_lib INTERFACE vibe_ring_buffer)
+endif()

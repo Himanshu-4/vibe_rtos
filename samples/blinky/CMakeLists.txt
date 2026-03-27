@@ -18,6 +18,7 @@ cmake_minimum_required(VERSION 3.20)
 # --- Board and toolchain: MUST come before project() ---
 set(VIBE_BOARD "rpi_pico2" CACHE STRING "Target board name")
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/vibe_board_toolchain.cmake")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(blinky C ASM)
 
