@@ -16,6 +16,7 @@ set(KERNEL_SOURCES
     idle.c
     smp.c
     spinlock.c
+    trace.c
 )
 
 # Create the kernel static library

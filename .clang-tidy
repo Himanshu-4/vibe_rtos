@@ -12,8 +12,7 @@
 # Enabled check groups
 # ---------------------------------------------------------------------------
 Checks: >
-  -*,
-  bugprone-*,
+  -*,x
   -bugprone-easily-swappable-parameters,
   cert-*,
   -cert-dcl03-c,

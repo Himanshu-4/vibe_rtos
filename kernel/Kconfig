@@ -94,4 +94,22 @@ config SYS_WORKQ_PRIORITY
     help
       Priority of the system work queue worker thread.
 
+menu "Tracing"
+
+config TRACE
+    bool "Enable kernel trace hooks and runtime statistics"
+    default n
+    help
+      Instruments the kernel with trace hooks at every scheduling event
+      (thread switch, thread lifecycle, ISR entry/exit, tick, idle) and
+      adds runtime-statistics fields to each thread control block
+      (switch-in count, last switch-in tick, total run time).
+
+      The hooks are weak no-ops until a trace library (SEGGER SystemView,
+      Percepio Tracealyzer, or a custom RTT recorder) overrides them —
+      see include/vibe/trace.h. When disabled, all instrumentation
+      compiles away to nothing.
+
+endmenu
+
 endmenu

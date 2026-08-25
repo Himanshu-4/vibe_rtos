@@ -19,6 +19,26 @@
 /* Pull in the arch IRQ lock/unlock primitives. */
 extern uint32_t arch_irq_lock(void);
 extern void     arch_irq_unlock(uint32_t key);
+extern bool     arch_is_in_isr(void);
+
+/* -----------------------------------------------------------------------
+ * Public vibe_irq_* API (vibe/irq.h) — thin wrappers over the arch layer
+ * --------------------------------------------------------------------- */
+
+vibe_irq_key_t vibe_irq_lock(void)
+{
+    return arch_irq_lock();
+}
+
+void vibe_irq_unlock(vibe_irq_key_t key)
+{
+    arch_irq_unlock(key);
+}
+
+bool vibe_irq_is_in_isr(void)
+{
+    return arch_is_in_isr();
+}
 
 /* -----------------------------------------------------------------------
  * vibe_spinlock_lock_irqsave()

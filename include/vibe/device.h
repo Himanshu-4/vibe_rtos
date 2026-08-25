@@ -72,6 +72,7 @@ typedef struct vibe_device {
     void                    *data;     /**< Mutable driver state (runtime data). */
     vibe_err_t             (*init_fn)(const struct vibe_device *dev); /**< Init function. */
     const vibe_pm_ops_t     *pm_ops;   /**< Power management ops, or NULL. */
+    vibe_init_level_t        init_level; /**< Init ordering level (walker filters on this). */
 } vibe_device_t;
 
 /* -----------------------------------------------------------------------
@@ -103,6 +104,7 @@ typedef struct vibe_device {
         .data    = (data_),                                                            \
         .init_fn = (init_fn_),                                                         \
         .pm_ops  = (pm_ops_),                                                          \
+        .init_level = (level),                                                         \
     }
 
 /* -----------------------------------------------------------------------

@@ -7,8 +7,6 @@
 #include "vibe/sys/util.h"   /* STATIC_ASSERT */
 #include <string.h>
 
-#if defined(CONFIG_JOB_SCHEDULER)
-
 /* Each slot is tracked by a bit in a uint64_t during the priority scan. */
 STATIC_ASSERT(CONFIG_JOB_SCHEDULER_MAX_JOBS <= 64,
               "CONFIG_JOB_SCHEDULER_MAX_JOBS must not exceed 64");
@@ -176,5 +174,3 @@ void vibe_sched_get_stats(const vibe_job_sched_t *sched,
     *s = sched->stats;
 }
 #endif
-
-#endif /* CONFIG_JOB_SCHEDULER */

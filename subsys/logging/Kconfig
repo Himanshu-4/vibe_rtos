@@ -20,9 +20,10 @@ config LOG_BACKEND_UART
 config LOG_BACKEND_RTT
     bool "RTT (SEGGER Real-Time Transfer) logging backend"
     default n
-    depends on LOG
+    depends on LOG && RTT
     help
-      Output log messages via SEGGER RTT (requires RTT library).
+      Output log messages via the RTT Terminal channel (subsys/rtt),
+      readable with J-Link RTT Viewer, OpenOCD, or pyOCD.
 
 config LOG_DEFERRED
     bool "Deferred (asynchronous) logging"

@@ -1,0 +1,27 @@
+config SOC_MPS2_AN386
+    bool "ARM MPS2 AN386 (Cortex-M4)"
+    select CPU_CORTEX_M4
+    help
+      ARM MPS2 FPGA prototyping board loaded with the AN386 DesignStart
+      Cortex-M4 image. Emulated by QEMU as machine `mps2-an386` — this is
+      the SoC VibeRTOS uses for emulation-based testing.
+
+if SOC_MPS2_AN386
+
+config SOC_HAS_FPU
+    bool
+    default y        # Cortex-M4F (VibeRTOS builds soft-float by default)
+
+config SOC_FLASH_SIZE
+    int
+    default 4194304  # 4MB ZBT SSRAM1 at 0x00000000 (code, acts as flash)
+
+config SOC_RAM_SIZE
+    int
+    default 4194304  # 4MB ZBT SSRAM2/3 at 0x20000000 (data)
+
+config SOC_NUM_CORES
+    int
+    default 1        # Single-core Cortex-M4
+
+endif # SOC_MPS2_AN386

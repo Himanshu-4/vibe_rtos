@@ -16,6 +16,7 @@
 #include "vibe/thread.h"
 #include "vibe/sched.h"
 #include "vibe/types.h"
+#include "vibe/trace.h"
 #include "vibe/sys/printk.h"
 
 #include "vibe/arch.h"
@@ -57,9 +58,8 @@ void _vibe_idle_entry(void *arg)
          * Enter CPU low-power state.
          * On Cortex-M this is WFI (Wait For Interrupt).
          * The CPU wakes on the next IRQ (tick, GPIO, UART, etc.).
-         *
-         * USER: implement arch_cpu_idle() — typically a single WFI instruction.
          */
+        VIBE_TRACE_IDLE();
         arch_cpu_idle();
 
         /*

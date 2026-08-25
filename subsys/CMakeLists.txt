@@ -10,6 +10,10 @@ if(CONFIG_SHELL)
     list(APPEND _SUBSYS_SRCS shell/shell.c)
 endif()
 
+if(CONFIG_RTT)
+    list(APPEND _SUBSYS_SRCS rtt/rtt.c)
+endif()
+
 if(CONFIG_COREDUMP)
     list(APPEND _SUBSYS_SRCS
         coredump/coredump.c

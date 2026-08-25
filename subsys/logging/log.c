@@ -14,6 +14,10 @@
 #include <string.h>
 #include <stdarg.h>
 
+#ifdef CONFIG_LOG_BACKEND_RTT
+#include "vibe/rtt.h"
+#endif
+
 #ifdef CONFIG_LOG
 
 /* -----------------------------------------------------------------------
@@ -75,10 +79,25 @@ static void _log_output(const vibe_log_module_t *mod,
                          const char              *msg)
 {
     /* Format: [LEVEL][module_name] msg\n */
+#ifdef CONFIG_LOG_BACKEND_RTT
+    {
+        char line[160];
+        size_t n = vibe_snprintk(line, sizeof(line), "[%s][%s] %s\n",
+                                 _level_str[level],
+                                 mod ? mod->name : "?",
+                                 msg);
+        if (n >= sizeof(line)) {
+            n = sizeof(line) - 1U;
+        }
+        vibe_rtt_write(0U, line, (unsigned)n);
+    }
+#endif
+#if !defined(CONFIG_LOG_BACKEND_RTT) || defined(CONFIG_LOG_BACKEND_UART)
     vibe_printk("[%s][%s] %s\n",
                 _level_str[level],
                 mod ? mod->name : "?",
                 msg);
+#endif
 }
 
 /* -----------------------------------------------------------------------
@@ -97,14 +116,12 @@ void _vibe_log_emit(vibe_log_module_t *mod,
     if (mod == NULL) { return; }
     if (level > mod->level) { return; } /* Filter */
 
-    /* Format the message */
+    /* Format the message with the kernel formatter (supports %d %i %u
+     * %x %X %s %c %p %% and the 'l' length modifier). */
     char msg[128];
     va_list args;
     va_start(args, fmt);
-    /* Simple vsnprintf-like formatting using vibe_vprintk style */
-    /* For now, just copy the format string since we don't have full vsnprintf */
-    strncpy(msg, fmt, sizeof(msg) - 1);
-    msg[sizeof(msg) - 1] = '\0';
+    vibe_vsnprintk(msg, sizeof(msg), fmt, args);
     va_end(args);
 
 #ifdef CONFIG_LOG_DEFERRED

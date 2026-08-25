@@ -12,10 +12,33 @@
 #include "vibe/types.h"
 #include "vibe/mem.h"
 #include "vibe/spinlock.h"
+#include "vibe/trace.h"
 #include "vibe/sys/printk.h"
 #include <string.h>
 
 #include "vibe/arch.h"
+
+/* -----------------------------------------------------------------------
+ * Thread exit trampoline
+ *
+ * arch_thread_stack_init() places this function in the initial frame's LR
+ * slot, so a thread whose entry function returns lands here instead of
+ * jumping to a garbage address.
+ * --------------------------------------------------------------------- */
+
+void _vibe_thread_exit(void)
+{
+    vibe_thread_t *self = vibe_thread_self();
+
+    VIBE_TRACE_THREAD_EXIT(self);
+    vibe_thread_delete(self);
+
+    /* vibe_thread_delete(self) reschedules away and never returns here;
+     * spin defensively in case the scheduler is not running yet. */
+    for (;;) {
+        arch_cpu_idle();
+    }
+}
 
 /* -----------------------------------------------------------------------
  * Stack canary value
@@ -123,6 +146,8 @@ vibe_err_t vibe_thread_create(vibe_thread_t          *thread,
 
     /* Set up the initial stack frame. */
     _thread_stack_setup(thread);
+
+    VIBE_TRACE_THREAD_CREATE(thread);
 
     /* Move thread to the READY state and enqueue it. */
     _vibe_sched_enqueue(thread);
@@ -233,6 +258,8 @@ void vibe_thread_sleep(uint32_t ms)
 
     vibe_tick_t now    = vibe_tick_get();
     vibe_tick_t expiry = now + VIBE_MS_TO_TICKS(ms);
+
+    VIBE_TRACE_THREAD_SLEEP(self, expiry);
 
     /* Remove from run queue and place in sleep list. */
     vibe_irq_key_t key = arch_irq_lock();

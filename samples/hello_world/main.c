@@ -26,7 +26,7 @@ static void hello_thread_entry(void *arg)
 
     for (;;) {
         vibe_printk("[hello] Hello from VibeRTOS! count=%u uptime=%ums\n",
-                    count, vibe_uptime_ms());
+                    (unsigned)count, (unsigned)vibe_uptime_ms());
         count++;
         vibe_thread_sleep(1000);  /* Sleep 1 second */
     }

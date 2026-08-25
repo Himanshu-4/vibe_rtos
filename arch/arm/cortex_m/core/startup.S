@@ -41,7 +41,7 @@
 /* -----------------------------------------------------------------------
  * External symbols
  * --------------------------------------------------------------------- */
-    .extern vibe_init          /* Kernel entry — never returns */
+    .extern main               /* Application entry — calls vibe_init() */
     .extern SystemInit         /* Board/SoC clock init (weak stub below) */
 
     /* Linker script symbols for data/bss initialisation */
@@ -98,44 +98,57 @@ _vibe_vector_table:
 
 Reset_Handler:
     /*
-     * TODO (USER): Implement full startup sequence here.
-     *
-     * Minimal sequence for Cortex-M:
+     * Startup sequence for Cortex-M:
      *
      *   1. The hardware has already loaded SP from vector_table[0].
      *
-     *   2. Call SystemInit to configure clocks and flash latency.
-     *      (Must not use any RAM-based globals before .data is copied.)
+     *   2. Copy .data from flash (LMA=_sidata) to RAM (VMA=_sdata.._edata).
      *
-     *   3. Copy .data from flash (LMA=_sidata) to RAM (VMA=_sdata.._edata).
+     *   3. Zero .bss (_sbss.._ebss).
      *
-     *   4. Zero .bss (_sbss.._ebss).
+     *   4. Call SystemInit to configure clocks and flash latency.
+     *      (Runs after the C runtime is initialised so it may safely use
+     *       RAM-based globals, e.g. arch_set_core_clock().)
      *
      *   5. Call vibe_init() — starts the scheduler, never returns.
      *
-     * Stub implementation (does nothing useful — replace with real code):
+     * All instructions below are Thumb-1 so this also runs on Cortex-M0+.
      */
 
-    /* Step 2: Call SystemInit */
+    /* Step 2: Copy .data section from flash to RAM */
+    ldr     r0, =_sidata       /* flash source (LMA) */
+    ldr     r1, =_sdata        /* RAM dest start (VMA) */
+    ldr     r2, =_edata        /* RAM dest end */
+_data_copy_loop:
+    cmp     r1, r2
+    bcs     _data_copy_done
+    ldr     r3, [r0]
+    adds    r0, r0, #4
+    str     r3, [r1]
+    adds    r1, r1, #4
+    b       _data_copy_loop
+_data_copy_done:
+
+    /* Step 3: Zero .bss */
+    ldr     r0, =_sbss
+    ldr     r1, =_ebss
+    movs    r2, #0
+_bss_zero_loop:
+    cmp     r0, r1
+    bcs     _bss_zero_done
+    str     r2, [r0]
+    adds    r0, r0, #4
+    b       _bss_zero_loop
+_bss_zero_done:
+
+    /* Step 4: Call SystemInit (weak stub below; boards/SoCs override) */
     bl      SystemInit
 
-    /* Step 3: Copy .data section */
-    /* TODO: implement data copy loop */
-    /* ldr r0, =_sidata    ; flash source */
-    /* ldr r1, =_sdata     ; RAM dest start */
-    /* ldr r2, =_edata     ; RAM dest end */
-    /* ... */
-
-    /* Step 4: Zero .bss */
-    /* TODO: implement bss zero loop */
-    /* ldr r0, =_sbss */
-    /* ldr r1, =_ebss */
-    /* movs r2, #0 */
-    /* ... */
-
-    /* Step 5: Enter VibeRTOS — never returns */
-    bl      vibe_init
-    /* If vibe_init returns (it should not), loop forever */
+    /* Step 5: Call the application's main(), which creates its threads
+     * and calls vibe_init() — that starts the scheduler and never
+     * returns (Reset_Handler -> main -> vibe_init). */
+    bl      main
+    /* If main returns (it should not), loop forever */
 _reset_loop:
     b       _reset_loop
 

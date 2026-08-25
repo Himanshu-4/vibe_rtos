@@ -1,0 +1,54 @@
+menu "RTT (Real-Time Transfer)"
+
+config RTT
+    bool "Enable RTT debugger I/O channels"
+    default n
+    help
+      SEGGER-RTT-compatible target->host / host->target ring buffers in
+      RAM, drained by the debug probe over SWD. Works with J-Link RTT
+      Viewer, OpenOCD (`rtt setup/start`), and pyOCD without any target
+      protocol. Non-blocking: output is dropped when the host is not
+      attached, so timing stays deterministic.
+
+if RTT
+
+config RTT_BUFFER_SIZE_UP
+    int "Up buffer (target -> host) size in bytes"
+    default 1024
+    range 64 65536
+    help
+      Ring buffer size for channel 0 ("Terminal") output. Larger buffers
+      tolerate slower host polling without dropping data.
+
+config RTT_BUFFER_SIZE_DOWN
+    int "Down buffer (host -> target) size in bytes"
+    default 64
+    range 16 4096
+    help
+      Ring buffer size for channel 0 input (host keystrokes / commands).
+
+config RTT_MAX_UP_BUFFERS
+    int "Maximum number of up buffers"
+    default 2
+    range 1 8
+    help
+      Slots in the control block for target->host channels. Channel 0 is
+      the Terminal; extra slots are for a future trace library (e.g.
+      SystemView uses its own channel).
+
+config RTT_MAX_DOWN_BUFFERS
+    int "Maximum number of down buffers"
+    default 2
+    range 1 8
+
+config RTT_CONSOLE
+    bool "Route the kernel console (vibe_printk) to RTT"
+    default n
+    help
+      Provides a strong vibe_console_putc() that writes to RTT channel 0.
+      Mutually exclusive with a board/SoC console that also overrides
+      vibe_console_putc (the link will fail if both are enabled).
+
+endif # RTT
+
+endmenu

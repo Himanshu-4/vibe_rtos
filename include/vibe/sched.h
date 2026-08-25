@@ -134,6 +134,16 @@ void _vibe_sched_sleep(vibe_thread_t *thread, vibe_tick_t expiry_ticks);
 void _vibe_sched_wake_expired(vibe_tick_t current_tick);
 
 /**
+ * @brief Round-robin time-slice accounting — called once per system tick.
+ *
+ * When CONFIG_TIMESLICE_MS > 0 and another thread of the same priority is
+ * ready, rotates the current thread to the tail of its run queue every
+ * CONFIG_TIMESLICE_MS milliseconds. The tick handler reschedules right
+ * after, which performs the actual switch.
+ */
+void _vibe_sched_timeslice_tick(void);
+
+/**
  * @brief Calculate the number of ticks until the next scheduled wakeup.
  *
  * Used by the tickless idle implementation to program the hardware timer.

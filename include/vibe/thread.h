@@ -111,6 +111,14 @@ typedef struct vibe_thread {
     uint8_t               is_static : 1;   /**< Stack/TCB allocated statically. */
     uint8_t               detached  : 1;   /**< Auto-delete on exit. */
     uint8_t               reserved  : 6;
+
+#ifdef CONFIG_TRACE
+    /* Trace / runtime statistics (see vibe/trace.h). Maintained by the
+     * scheduler; consumed by trace viewers (SystemView, Tracealyzer, ...). */
+    uint32_t              switch_in_count; /**< Times scheduled in. */
+    vibe_tick_t           last_switch_in;  /**< Tick of last switch-in. */
+    vibe_tick_t           total_runtime;   /**< Accumulated run time (ticks). */
+#endif
 } vibe_thread_t;
 
 /* -----------------------------------------------------------------------

@@ -1,0 +1,47 @@
+# Default Kconfig configuration for ARM MPS2 AN386 (QEMU emulation)
+CONFIG_BOARD_MPS2_AN386=y
+CONFIG_SOC_MPS2_AN386=y
+CONFIG_ARCH_ARM=y
+CONFIG_CPU_CORTEX_M4=y
+
+# System clock
+CONFIG_SYS_CLOCK_HZ=1000
+
+# Kernel features
+CONFIG_KERNEL_PREEMPT_ENABLED=y
+CONFIG_NUM_PRIORITIES=32
+CONFIG_TIMESLICE_MS=10
+CONFIG_TICKLESS_IDLE=y
+CONFIG_SMP=n
+CONFIG_HEAP_MEM=y
+CONFIG_HEAP_SIZE=8192
+CONFIG_STACK_CANARY=y
+CONFIG_TLS=y
+CONFIG_SCHED_DYNAMIC_PRIORITY=y
+
+# Drivers — console goes through the SoC's CMSDK UART putc hook, so the
+# generic UART driver stub stays enabled only for device-registry tests.
+CONFIG_UART=y
+CONFIG_GPIO=n
+CONFIG_SPI=n
+CONFIG_I2C=n
+CONFIG_ADC=n
+CONFIG_FLASH=n
+CONFIG_TIMER_HW=n
+CONFIG_RTC=n
+CONFIG_WATCHDOG=n
+
+# Subsystems
+CONFIG_SHELL=n
+CONFIG_LOG=y
+CONFIG_LOG_DEFAULT_LEVEL=2
+CONFIG_LOG_BACKEND_UART=y
+CONFIG_LOG_DEFERRED=n
+
+# RTT — debugger-visible I/O ring buffers (exercised by the emu test app)
+CONFIG_RTT=y
+CONFIG_RTT_BUFFER_SIZE_UP=1024
+CONFIG_RTT_BUFFER_SIZE_DOWN=64
+
+# Kernel tracing — hooks + per-thread runtime stats
+CONFIG_TRACE=y

@@ -217,6 +217,16 @@ void arch_nvic_set_priority(uint32_t irq, uint32_t priority);
  */
 void arch_systick_init(uint32_t ticks_per_sec);
 
+/**
+ * @brief Set the CPU core clock frequency used for SysTick calculations.
+ *
+ * Board/SoC init code (SystemInit) must call this before
+ * arch_systick_init() so the tick reload value is computed correctly.
+ *
+ * @param hz  Core clock frequency in Hz.
+ */
+void arch_set_core_clock(uint32_t hz);
+
 /* -----------------------------------------------------------------------
  * SysTick ISR — implemented in core/irq.c, calls kernel tick handler
  * --------------------------------------------------------------------- */

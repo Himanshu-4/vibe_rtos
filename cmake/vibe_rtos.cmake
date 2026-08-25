@@ -97,11 +97,23 @@ macro(vibe_add_application APP_NAME)
     # Link kernel + arch always; link optional libraries only if their target
     # was created (i.e. their CONFIG was enabled).  All go inside --start-group
     # so the linker makes multiple passes for any circular references.
+    #
+    # vibe_drivers and vibe_subsys register devices / shell commands purely
+    # through linker sections (VIBE_DEVICE_DEFINE etc.) — nothing references
+    # their symbols, so they must be linked --whole-archive or the linker
+    # would drop every registry entry.
     set(_VIBE_LINK_LIBS vibe_kernel vibe_arch vibe_lib)
-    foreach(_OPT_LIB vibe_heap vibe_ring_buffer vibe_job_scheduler
-                     vibe_subsys vibe_drivers)
+    foreach(_OPT_LIB vibe_heap vibe_ring_buffer vibe_job_scheduler)
         if(TARGET ${_OPT_LIB})
             list(APPEND _VIBE_LINK_LIBS ${_OPT_LIB})
+        endif()
+    endforeach()
+    # ($<LINK_LIBRARY:WHOLE_ARCHIVE,...> is unavailable here: the bare-metal
+    #  toolchain skips compiler feature detection, so use raw linker flags.)
+    foreach(_REG_LIB vibe_subsys vibe_drivers)
+        if(TARGET ${_REG_LIB})
+            list(APPEND _VIBE_LINK_LIBS
+                 -Wl,--whole-archive "$<TARGET_FILE:${_REG_LIB}>" -Wl,--no-whole-archive)
         endif()
     endforeach()
 
@@ -110,6 +122,14 @@ macro(vibe_add_application APP_NAME)
         ${_VIBE_LINK_LIBS}
         -Wl,--end-group
     )
+
+    # $<TARGET_FILE:...> in the link line does not imply a build-order edge —
+    # add it explicitly for the whole-archive libraries.
+    foreach(_REG_LIB vibe_subsys vibe_drivers)
+        if(TARGET ${_REG_LIB})
+            add_dependencies(${APP_NAME} ${_REG_LIB})
+        endif()
+    endforeach()
 
     # Compile definitions
     target_compile_definitions(${APP_NAME} PRIVATE

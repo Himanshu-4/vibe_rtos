@@ -159,10 +159,19 @@ function(_vibe_yaml_set_config CONFIG_NAME VALUE)
                 set(NEW_CONTENT "${NEW_CONTENT}${L}\n")
             endif()
         endforeach()
-        # Append new definition before endif
-        string(REPLACE "#endif /* VIBE_AUTOCONF_H */"
-            "#define ${CONFIG_NAME} ${VALUE}\n#endif /* VIBE_AUTOCONF_H */"
-            NEW_CONTENT "${NEW_CONTENT}")
+        # Re-add the definition. A value of "0" means "disabled" — leave the
+        # symbol undefined so #ifdef CONFIG_X guards behave correctly.
+        # kconfiglib's autoconf.h has no include guard, so append before the
+        # guard endif when one exists, otherwise at the end of the file.
+        if(NOT VALUE STREQUAL "0")
+            if(NEW_CONTENT MATCHES "#endif /\\* VIBE_AUTOCONF_H \\*/")
+                string(REPLACE "#endif /* VIBE_AUTOCONF_H */"
+                    "#define ${CONFIG_NAME} ${VALUE}\n#endif /* VIBE_AUTOCONF_H */"
+                    NEW_CONTENT "${NEW_CONTENT}")
+            else()
+                set(NEW_CONTENT "${NEW_CONTENT}#define ${CONFIG_NAME} ${VALUE}\n")
+            endif()
+        endif()
         file(WRITE ${AUTOCONF_FILE} "${NEW_CONTENT}")
     endif()
 

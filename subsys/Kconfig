@@ -5,5 +5,6 @@ menu "Subsystems"
 source "subsys/shell/Kconfig"
 source "subsys/logging/Kconfig"
 source "subsys/coredump/Kconfig"
+source "subsys/rtt/Kconfig"
 
 endmenu

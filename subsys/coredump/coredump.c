@@ -302,7 +302,6 @@ void _vibe_coredump_capture(uint32_t *exc_frame,
     cd->timestamp = (uint32_t)vibe_tick_get();
 
     /* Current thread info */
-    extern vibe_thread_t *vibe_thread_self(void);
     vibe_thread_t *t = vibe_thread_self();
     if (t && t->name[0]) {
         strncpy(cd->thread_name, t->name, sizeof(cd->thread_name) - 1U);

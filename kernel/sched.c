@@ -14,6 +14,7 @@
 #include "vibe/thread.h"
 #include "vibe/types.h"
 #include "vibe/spinlock.h"
+#include "vibe/trace.h"
 #include "vibe/sys/list.h"
 #include "vibe/sys/printk.h"
 #include <string.h>
@@ -86,6 +87,8 @@ void _vibe_sched_enqueue(vibe_thread_t *thread)
     g_ready_mask |= BIT(prio);
 
     arch_irq_unlock(key);
+
+    VIBE_TRACE_THREAD_READY(thread);
 }
 
 void _vibe_sched_dequeue(vibe_thread_t *thread)
@@ -128,17 +131,22 @@ vibe_thread_t *_vibe_sched_next_thread(void)
 
 void _vibe_sched_reschedule(void)
 {
+    /* Runs from both thread and ISR context — the whole decision must be
+     * atomic or a tick ISR could race a thread-context reschedule. */
+    vibe_irq_key_t key = arch_irq_lock();
+
     if (g_sched_lock_count > 0) {
+        arch_irq_unlock(key);
         return; /* Scheduler locked — don't preempt. */
     }
 
     vibe_thread_t *next = _vibe_sched_next_thread();
-    if (next == g_current_thread) {
-        return; /* Already running the best thread. */
+    if (next == NULL || next == g_current_thread) {
+        arch_irq_unlock(key);
+        return; /* Nothing to run, or already running the best thread. */
     }
 
-    /* On Cortex-M: pend PendSV which does the actual context switch.
-     * USER: arch_switch_to does the low-level register save/restore. */
+    /* On Cortex-M: pend PendSV which does the actual context switch. */
     vibe_thread_t *prev = g_current_thread;
     g_current_thread = next;
     next->state = VIBE_THREAD_RUNNING;
@@ -148,7 +156,52 @@ void _vibe_sched_reschedule(void)
         prev->state = VIBE_THREAD_READY;
     }
 
+#ifdef CONFIG_TRACE
+    /* Runtime statistics for trace viewers. */
+    vibe_tick_t now = vibe_tick_get();
+    if (prev != NULL) {
+        prev->total_runtime += now - prev->last_switch_in;
+    }
+    next->switch_in_count++;
+    next->last_switch_in = now;
+#endif
+    if (prev != NULL) {
+        VIBE_TRACE_THREAD_SWITCH_OUT(prev);
+    }
+    VIBE_TRACE_THREAD_SWITCH_IN(next);
+
     arch_switch_to(prev, next);
+
+    arch_irq_unlock(key);
+}
+
+/* -----------------------------------------------------------------------
+ * Round-robin time-slicing — called from the system tick handler
+ * --------------------------------------------------------------------- */
+
+void _vibe_sched_timeslice_tick(void)
+{
+#if defined(CONFIG_TIMESLICE_MS) && (CONFIG_TIMESLICE_MS > 0)
+    static uint32_t slice_left = VIBE_MS_TO_TICKS(CONFIG_TIMESLICE_MS);
+
+    vibe_thread_t *cur = g_current_thread;
+    if (cur == NULL || cur->state != VIBE_THREAD_RUNNING) {
+        return;
+    }
+
+    if (slice_left > 1U) {
+        slice_left--;
+        return;
+    }
+    slice_left = VIBE_MS_TO_TICKS(CONFIG_TIMESLICE_MS);
+
+    /* Rotate only when another thread is ready at the same priority. */
+    if (vibe_list_count(&g_run_queues[cur->priority]) > 1U) {
+        _vibe_sched_dequeue(cur);
+        _vibe_sched_enqueue(cur);
+        /* The caller (_vibe_sys_tick_handler) reschedules right after. */
+    }
+#endif
 }
 
 /* -----------------------------------------------------------------------
@@ -167,8 +220,14 @@ void _vibe_sched_sleep(vibe_thread_t *thread, vibe_tick_t expiry_ticks)
     VIBE_LIST_FOR_EACH(&g_sleep_list, node) {
         vibe_thread_t *t = CONTAINER_OF(node, vibe_thread_t, sleep_node);
         if (expiry_ticks < t->timeout) {
-            vibe_list_insert_after(&g_sleep_list, node->prev
-                                    ? node->prev : NULL, &thread->sleep_node);
+            if (node->prev != NULL) {
+                vibe_list_insert_after(&g_sleep_list, node->prev,
+                                       &thread->sleep_node);
+            } else {
+                /* Inserting before the head — insert_after(NULL) would
+                 * dereference NULL; use prepend instead. */
+                vibe_list_prepend(&g_sleep_list, &thread->sleep_node);
+            }
             goto done;
         }
     }
@@ -267,11 +326,12 @@ vibe_sched_mode_t vibe_sched_get_mode(void)
 
 void vibe_sched_start(void)
 {
-    /* Initialise run queues. */
-    for (int i = 0; i < CONFIG_NUM_PRIORITIES; i++) {
-        vibe_list_init(&g_run_queues[i]);
-    }
-    vibe_list_init(&g_sleep_list);
+    /* NOTE: run queues and the sleep list are NOT re-initialised here.
+     * A zeroed vibe_list_t (from BSS) is already a valid empty list, and
+     * threads created during vibe_init() — idle thread, system work
+     * queue, application threads — are enqueued BEFORE this function
+     * runs. Re-initialising the queues here would silently drop them
+     * (that was the "FATAL: no thread to schedule" bug). */
 
     /* Select the first thread to run. */
     g_current_thread = _vibe_sched_next_thread();
@@ -286,10 +346,16 @@ void vibe_sched_start(void)
 
     g_current_thread->state = VIBE_THREAD_RUNNING;
 
+#ifdef CONFIG_TRACE
+    g_current_thread->switch_in_count++;
+    g_current_thread->last_switch_in = vibe_tick_get();
+#endif
+    VIBE_TRACE_THREAD_SWITCH_IN(g_current_thread);
+
     /* Perform the very first context switch from "no thread" to the
-     * selected thread. arch_switch_to(NULL, first) initialises the CPU
-     * state from the thread's pre-initialised stack frame.
-     * USER: implement arch_switch_to for your CPU. */
+     * selected thread. arch_switch_to(NULL, first) pends PendSV, which
+     * initialises the CPU state from the thread's pre-built stack frame
+     * as soon as interrupts allow it to fire. */
     arch_switch_to(NULL, g_current_thread);
 
     /* Never reached. */

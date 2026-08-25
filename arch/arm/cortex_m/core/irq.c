@@ -18,6 +18,8 @@
 
 #include "arch/arm/cortex_m/arch.h"
 #include "vibe/types.h"
+#include "vibe/thread.h"
+#include "vibe/trace.h"
 #include "vibe/sys/printk.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -114,14 +116,18 @@ void arch_init(void)
      * no other exceptions are active. This ensures context switches
      * always happen in a clean state.
      *
-     * SCB->SHPR[2] holds priorities for SysTick (bits 31:24) and
-     * PendSV (bits 23:16).
+     * SCB->SHPR[2] (SHPR3) holds priorities for SysTick (PRI_15, bits
+     * 31:24) and PendSV (PRI_14, bits 23:16).
      *
-     * For Cortex-M0+ (2 priority bits in bits [7:6]):
-     *   PendSV priority = 0xC0 (lowest)
-     *   SysTick priority = 0x40 (above PendSV)
+     * PendSV must be the LOWEST priority in the system: if it could
+     * preempt an ISR, the context switch would run inside a nested
+     * exception and its "return to Thread mode" EXC_RETURN would be an
+     * integrity violation (INVPC UsageFault).
+     *
+     * 0xFF truncates to the implemented priority bits (0xC0 on M0+,
+     * 0xF0 on M4/M33) — always the lowest level.
      */
-    SCB->SHPR[2] = (0xC0U << 24) | (0x40U << 16); /* SysTick=0x40, PendSV=0xC0 */
+    SCB->SHPR[2] = (0x40U << 24) | (0xFFU << 16); /* SysTick=0x40, PendSV=lowest */
 
     /*
      * TODO (USER): Set VTOR if your vector table is not at 0x00000000.
@@ -245,7 +251,44 @@ void arch_systick_init(uint32_t ticks_per_sec)
 
 void SysTick_Handler(void)
 {
+    VIBE_TRACE_ISR_ENTER();
     _vibe_sys_tick_handler();
+    VIBE_TRACE_ISR_EXIT();
+}
+
+/* -----------------------------------------------------------------------
+ * arch_switch_to() — publish the context-switch pair and pend PendSV
+ *
+ * PendSV_Handler (context_switch.S) performs the actual register
+ * save/restore using these pointers. Implemented in C so the handler can
+ * work with &thread->stack_ptr directly instead of hard-coded TCB offsets.
+ * --------------------------------------------------------------------- */
+
+/* &thread->stack_ptr of the thread whose register context is currently ON
+ * the CPU. Maintained exclusively by PendSV_Handler; NULL until the first
+ * switch. This deliberately lags g_current_thread: the kernel may pick a
+ * new current several times before PendSV runs, but only PendSV knows
+ * whose registers are physically live. */
+void **g_arch_running_sp_loc;
+
+/* &thread->stack_ptr of the kernel's latest scheduling choice. Updated on
+ * every arch_switch_to(); PendSV reads it once, atomically, per switch. */
+void **g_arch_next_sp_loc;
+
+void arch_switch_to(vibe_thread_t *from, vibe_thread_t *to)
+{
+    /* The 'from' thread is irrelevant here: PendSV saves into whichever
+     * thread is physically running (g_arch_running_sp_loc), which is the
+     * only correct save target even when several reschedules coalesce
+     * into one PendSV activation — or when PendSV gets pended again while
+     * already active (the re-entry degenerates into a harmless identity
+     * switch instead of corrupting a stale "from" thread). */
+    (void)from;
+
+    uint32_t key = arch_irq_lock();
+    g_arch_next_sp_loc = &to->stack_ptr;
+    SCB->ICSR = SCB_ICSR_PENDSVSET;
+    arch_irq_unlock(key);
 }
 
 /* -----------------------------------------------------------------------
@@ -325,6 +368,10 @@ void arch_thread_stack_init(vibe_thread_t *thread)
     /* Align to 8 bytes */
     stack_top = (uint8_t *)((uintptr_t)stack_top & ~7U);
 
+    /* Thread-exit trampoline (kernel/thread.c) — where the thread lands
+     * if its entry function ever returns. */
+    extern void _vibe_thread_exit(void);
+
     /* Hardware exception frame (8 words = 32 bytes) */
     uint32_t *frame = (uint32_t *)stack_top - 8;
     frame[0] = (uint32_t)(uintptr_t)thread->arg;     /* R0 */
@@ -332,7 +379,7 @@ void arch_thread_stack_init(vibe_thread_t *thread)
     frame[2] = 0x00000002U;                            /* R2 */
     frame[3] = 0x00000003U;                            /* R3 */
     frame[4] = 0x0000000CU;                            /* R12 */
-    frame[5] = 0xFFFFFFFDU;                            /* LR (EXC_RETURN) */
+    frame[5] = (uint32_t)(uintptr_t)_vibe_thread_exit; /* LR: entry() returns here */
     frame[6] = (uint32_t)(uintptr_t)thread->entry;    /* PC */
     frame[7] = 0x01000000U;                            /* xPSR (Thumb bit) */
 

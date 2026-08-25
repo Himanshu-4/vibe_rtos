@@ -1,0 +1,8 @@
+config BOARD_MPS2_AN386
+    bool "ARM MPS2 AN386 (QEMU emulation)"
+    select SOC_MPS2_AN386
+    help
+      ARM MPS2 FPGA board with the AN386 Cortex-M4 image. This is the
+      board VibeRTOS targets for QEMU emulation (`-M mps2-an386`):
+      4MB code SRAM at 0x0, 4MB data SRAM at 0x20000000, CMSDK UART
+      console, semihosting exit for automated test runs.

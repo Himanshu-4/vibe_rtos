@@ -7,6 +7,7 @@
  */
 
 #include <stdarg.h>
+#include <stddef.h>
 #include "vibe/types.h"
 
 #ifdef __cplusplus
@@ -32,6 +33,37 @@ void vibe_printk(const char *fmt, ...)
  * @brief va_list variant of vibe_printk.
  */
 void vibe_vprintk(const char *fmt, va_list args);
+
+/**
+ * @brief Format into a buffer (vsnprintf-style, kernel formatter).
+ *
+ * Supports the same conversions as vibe_printk (%d %i %u %x %X %s %c %p %%
+ * and the 'l' length modifier). The output is always NUL-terminated when
+ * size > 0.
+ *
+ * @param buf   Destination buffer.
+ * @param size  Buffer size in bytes (including space for the NUL).
+ * @param fmt   Format string.
+ * @param args  Argument list.
+ * @return      Number of characters that would have been written
+ *              (excluding the NUL), like vsnprintf.
+ */
+size_t vibe_vsnprintk(char *buf, size_t size, const char *fmt, va_list args);
+
+/**
+ * @brief Variadic convenience wrapper around vibe_vsnprintk().
+ */
+size_t vibe_snprintk(char *buf, size_t size, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
+
+/**
+ * @brief Low-level console output hook used by vibe_printk.
+ *
+ * Weakly defined as a no-op in kernel/init.c. Board or SoC support code
+ * provides a strong override that emits one character to the console
+ * device (UART, RTT, semihosting, ...).
+ */
+void vibe_console_putc(char c);
 
 /* -----------------------------------------------------------------------
  * Assertion macros
